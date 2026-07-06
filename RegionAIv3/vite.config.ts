@@ -4,10 +4,11 @@ import removeConsole from 'vite-plugin-remove-console'
 import { fileURLToPath, URL } from 'node:url'
 
 const host = process.env.TAURI_DEV_HOST
+const isTauriBuild = process.env.__TAURI_BUILD === 'true'
 
 // https://vite.dev/config/
 export default defineConfig(async () => ({
-  plugins: [vue(), removeConsole()],
+  plugins: [vue(), ...(!isTauriBuild ? [removeConsole()] : [])],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

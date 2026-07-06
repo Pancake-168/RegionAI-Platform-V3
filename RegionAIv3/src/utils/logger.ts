@@ -23,6 +23,7 @@
  *   unhandledrejection，确保未捕获错误也能进入日志
  */
 
+import { invoke } from '@tauri-apps/api/core'
 import { isTauri } from '@/utils/isTauri'
 
 // ---- 类型定义 ----
@@ -160,7 +161,7 @@ const writeLog = (payload: LogPayload) => {
  * 创建带上下文的日志记录器。
  *
  * 使用方式：
- *   const log = createLogger("App.tsx", "handleLogin");
+ *   const log = createLogger("App.vue", "handleLogin");
  *   log.info("用户登录成功", { userId: 123 });
  *   log.error("登录失败", new Error("token expired"));
  */
@@ -208,21 +209,18 @@ export const registerTauriTransport = () => {
 
   runtimeFlags.__regionaiTauriTransportRegistered = true
 
-  // Tauri 桌面端：动态导入，避免 Web 构建引入 Tauri 内部模块
-  import('@tauri-apps/api/core').then(({ invoke }) => {
-    registerLogTransport((payload) => {
-      const entry: LogEntry = {
-        level: payload.level,
-        file_name: payload.fileName,
-        function_name: payload.functionName,
-        message: payload.message,
-        details: payload.details
-          ? payload.details.map(stringifyLogDetail)
-          : null,
-      }
-      invoke('write_log', { entry }).catch((e) => {
-        console.error('[logger] invoke write_log 失败:', e)
-      })
+  registerLogTransport((payload) => {
+    const entry: LogEntry = {
+      level: payload.level,
+      file_name: payload.fileName,
+      function_name: payload.functionName,
+      message: payload.message,
+      details: payload.details
+        ? payload.details.map(stringifyLogDetail)
+        : null,
+    }
+    invoke('write_log', { entry }).catch((e) => {
+      console.error('[logger] invoke write_log 失败:', e)
     })
   })
 }
@@ -252,8 +250,8 @@ export const registerGlobalErrorHandlers = () => {
 
   runtimeFlags.__regionaiGlobalErrorHandlersRegistered = true
 
-  const errorLogger = createLogger('main.tsx', 'window.onerror')
-  const rejectionLogger = createLogger('main.tsx', 'window.unhandledrejection')
+  const errorLogger = createLogger('main.ts', 'window.onerror')
+  const rejectionLogger = createLogger('main.ts', 'window.unhandledrejection')
 
   // 捕获同步异常和资源加载错误
   runtime.addEventListener('error', (event: ErrorEvent) => {
