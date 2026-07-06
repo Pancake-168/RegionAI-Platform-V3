@@ -67,6 +67,7 @@ const isOpen = ref(false)
               :value="opt.value"
               :disabled="opt.disabled"
             >
+              <component :is="opt.icon" v-if="opt.icon" />
               <SelectItemText>{{ opt.label }}</SelectItemText>
             </SelectItem>
           </SelectViewport>

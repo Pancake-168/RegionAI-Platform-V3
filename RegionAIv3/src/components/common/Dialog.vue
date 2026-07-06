@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import {
   DialogRoot,
-  DialogTrigger,
   DialogPortal,
   DialogOverlay,
   DialogContent,
@@ -12,22 +12,27 @@ import {
 import { Icon } from '@iconify/vue'
 import styles from './Dialog.module.css'
 
-defineProps<{
+const props = defineProps<{
   open?: boolean
   title: string
   description?: string
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   'update:open': [open: boolean]
 }>()
+
+const rootBindings = computed(() => {
+  const onUpdateOpen = (val: boolean) => emit('update:open', val)
+  if (props.open !== undefined) {
+    return { open: props.open, 'onUpdate:open': onUpdateOpen }
+  }
+  return { 'onUpdate:open': onUpdateOpen }
+})
 </script>
 
 <template>
-  <DialogRoot :open="open" @update:open="$emit('update:open', $event)">
-    <DialogTrigger v-if="$slots.trigger" as-child>
-      <slot name="trigger" />
-    </DialogTrigger>
+  <DialogRoot v-bind="rootBindings">
     <DialogPortal>
       <DialogOverlay :class="styles.overlay" />
       <DialogContent :class="styles.content">

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { type VNode } from 'vue'
 import {
   DropdownMenuRoot,
   DropdownMenuTrigger,
@@ -14,6 +15,7 @@ import type { MenuItem } from './types'
 withDefaults(
   defineProps<{
     items: MenuItem[]
+    trigger: VNode
     side?: 'top' | 'right' | 'bottom' | 'left'
     align?: 'start' | 'center' | 'end'
   }>(),
@@ -27,7 +29,7 @@ withDefaults(
 <template>
   <DropdownMenuRoot>
     <DropdownMenuTrigger as-child>
-      <slot name="trigger" />
+      <component :is="trigger" />
     </DropdownMenuTrigger>
     <DropdownMenuPortal>
       <DropdownMenuContent :class="styles.content" :side="side" :align="align" :side-offset="4">

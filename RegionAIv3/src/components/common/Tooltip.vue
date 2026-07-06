@@ -25,7 +25,7 @@ withDefaults(
 <template>
   <TooltipProvider :delay-duration="delayDuration">
     <TooltipRoot>
-      <TooltipTrigger as-child>
+      <TooltipTrigger as="span">
         <slot />
       </TooltipTrigger>
       <TooltipPortal>

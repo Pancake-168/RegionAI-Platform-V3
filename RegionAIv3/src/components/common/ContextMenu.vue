@@ -19,7 +19,7 @@ defineProps<{
 
 <template>
   <ContextMenuRoot>
-    <ContextMenuTrigger as-child :disabled="disabled">
+    <ContextMenuTrigger :disabled="disabled">
       <slot />
     </ContextMenuTrigger>
     <ContextMenuPortal>

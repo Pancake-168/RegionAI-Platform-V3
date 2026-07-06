@@ -15,13 +15,16 @@ fn greet(name: &str) -> String {
 // ============================================================================
 
 /// 确定日志目录：
-///   开发 → <src-tauri>/data/logs/
+///   开发 → 系统临时目录/regionaiv3/logs/
 ///   打包 → <安装目录>/data/logs/
+/// 说明：
+///   开发态不能写到 src-tauri/ 或其子目录，否则会被 Tauri 文件监听命中，
+///   导致“写日志 → 触发重建 → 重启应用 → 再写日志”的死循环。
+///   安装后的正式环境则统一写入 data/logs，保持 exe 和卸载程序位于第一层级，
+///   其他运行数据位于第二层级。
 fn get_log_dir(app_handle: &tauri::AppHandle) -> PathBuf {
     if cfg!(debug_assertions) {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("data")
-            .join("logs")
+        std::env::temp_dir().join("regionaiv3").join("logs")
     } else {
         app_handle
             .path()

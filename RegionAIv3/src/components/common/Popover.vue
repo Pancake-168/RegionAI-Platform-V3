@@ -23,7 +23,7 @@ withDefaults(
 <template>
   <PopoverRoot>
     <PopoverTrigger as-child>
-      <slot name="trigger" />
+      <span><slot name="trigger" /></span>
     </PopoverTrigger>
     <PopoverPortal>
       <PopoverContent :class="styles.content" :side="side" :align="align" :side-offset="6">
