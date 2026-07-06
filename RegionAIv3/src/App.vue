@@ -11,7 +11,7 @@ useTheme()
     <div class="app-layout">
       <TauriBar />
       <div class="main-page">
-        <nav class="app-nav">
+        <nav class="app-nav" v-if="false">
           <!-- 导航链接后续配置 -->
         </nav>
         <div class="app-content">

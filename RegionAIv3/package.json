@@ -18,8 +18,10 @@
     "@iconify-json/codicon": "^1.2.63",
     "@iconify-json/material-symbols": "^1.2.82",
     "@iconify/vue": "^5.0.1",
+    "@nocobase/client": "2.1.5",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-opener": "^2",
+    "matrix-js-sdk": "40.1.0-rc.0",
     "reka-ui": "^2.10.1",
     "vue": "^3.5.13",
     "vue-router": "^4.6.4"
