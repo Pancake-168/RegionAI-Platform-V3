@@ -1,0 +1,63 @@
+/* 注意：.btnClose:hover 的 background 和 color 是故意写死值 ——
+   Windows 系统关闭按钮惯例色（红色 #e81123），不随项目主题变化。 */
+
+.bar {
+  display: flex;
+  align-items: center;
+  height: var(--titlebar-height);
+  background: var(--glass);
+  border-bottom: 1px solid var(--glass-brd);
+  user-select: none;
+  flex-shrink: 0;
+  -webkit-app-region: drag;
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding-left: var(--spacing-lg);
+}
+
+.logo {
+  width: 16px;
+  height: 16px;
+}
+
+.title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.spacer {
+  flex: 1;
+  -webkit-app-region: drag;
+}
+
+.btn {
+  width: 46px;
+  height: var(--titlebar-height);
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-app-region: no-drag;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.btn:hover {
+  background: var(--glass);
+  color: var(--text);
+}
+
+.btnClose:hover {
+  background: #e81123;
+  color: #fff;
+}
