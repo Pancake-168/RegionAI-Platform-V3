@@ -55,7 +55,7 @@ function close() {
 <template>
   <header v-if="isTauri()" :class="styles.bar">
     <span :class="styles.left">
-      <img :class="styles.logo" :src="`${BASE_URL}tauri.svg`" alt="" />
+      <img :class="styles.logo" :src="`${BASE_URL}yanjing-logo.png`" alt="" />
       <span :class="styles.title">RegionAI</span>
     </span>
     <span :class="styles.spacer" />

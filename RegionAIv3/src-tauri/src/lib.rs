@@ -68,6 +68,36 @@ struct LogEntry {
     details: Option<Vec<String>>,
 }
 
+// 获取设备信息（主机名 + 持久化设备 ID），供前端 collectDeviceInfo 调用
+#[tauri::command]
+fn get_device_info(app_handle: tauri::AppHandle) -> Result<serde_json::Value, String> {
+    // 系统主机名
+    let device_name = hostname::get()
+        .map(|h| h.to_string_lossy().to_string())
+        .unwrap_or_default();
+
+    // 设备 ID 持久化：首次生成 UUID v4 写入文件，后续读取复用
+    let data_dir = app_handle
+        .path()
+        .app_local_data_dir()
+        .map_err(|e| e.to_string())?;
+    fs::create_dir_all(&data_dir).map_err(|e| e.to_string())?;
+    let id_file = data_dir.join("device_id");
+
+    let device_id = if id_file.exists() {
+        fs::read_to_string(&id_file).unwrap_or_default()
+    } else {
+        let id = uuid::Uuid::new_v4().to_string();
+        fs::write(&id_file, &id).map_err(|e| e.to_string())?;
+        id
+    };
+
+    Ok(serde_json::json!({
+        "deviceName": device_name,
+        "deviceId": device_id,
+    }))
+}
+
 #[tauri::command]
 fn write_log(app_handle: tauri::AppHandle, entry: LogEntry) -> Result<(), String> {
     let log_dir = get_log_dir(&app_handle);
@@ -149,7 +179,7 @@ pub fn run() {
             window_builder.build().expect("failed to build window");
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![greet, write_log])
+        .invoke_handler(tauri::generate_handler![greet, write_log, get_device_info])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|_app_handle, _event| {});
