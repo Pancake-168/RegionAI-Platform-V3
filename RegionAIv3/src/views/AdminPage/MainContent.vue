@@ -70,8 +70,7 @@ const ssoMergedRecords = ref<Array<Record<string, unknown>>>([])
 const appLoading = ref<boolean>(false) // 子应用数据加载中
 const tableLoading = ref<boolean>(false) // 表格数据加载中
 const ssoLoading = ref<boolean>(false) // SSO 数据加载中
-// SSO 类型筛选
-const ssoFilterType = ref<'all' | 'user' | 'bot'>('all')
+
 // 当前 collection 的表格数据行
 const appTableRows = ref<Array<Record<string, unknown>>>([])
 
@@ -126,7 +125,12 @@ const rows = computed<Array<Record<string, unknown>>>(() => {
 })
 
 // 表格中需要隐藏的系统字段
-const HIDDEN_COLUMNS = new Set(['createdAt', 'updatedAt', 'createdById', 'updatedById'])
+const HIDDEN_COLUMNS = new Set([
+  'createdAt',
+  'updatedAt',
+  'createdById',
+  'updatedById',
+])
 
 // 动态列：从所有行数据中提取唯一的 key 集合作为表头，排除系统字段
 const columns = computed<string[]>(() => {
@@ -152,25 +156,6 @@ const collectionSelectOptions = computed<SelectOption[]>(() =>
       label: col.name as string, // option 显示文本
     })),
 )
-
-// SSO 类型筛选的 Select 选项（静态常量）
-const ssoFilterOptions: SelectOption[] = [
-  { value: 'all', label: '全部类型' },
-  { value: 'user', label: 'User' },
-  { value: 'bot', label: 'Bot' },
-]
-
-// 筛选后的 SSO 记录
-const filteredSsoRecords = computed<Array<Record<string, unknown>>>(() => {
-  // 'all' → 全部
-  if (ssoFilterType.value === 'all') return ssoMergedRecords.value
-  // 'user' / 'bot' → 按 atype 字段前端过滤
-  return ssoMergedRecords.value.filter((row) => {
-    // 转小写后比较
-    const type = String(row?.atype ?? '').toLowerCase()
-    return type === ssoFilterType.value
-  })
-})
 
 // =====================
 // 工具函数
@@ -243,7 +228,8 @@ const registerUsernameError = computed<string>(() => {
 // 确认密码校验
 const registerConfirmError = computed<string>(() => {
   if (!registerConfirmPassword.value) return ''
-  if (registerConfirmPassword.value !== registerPassword.value) return '两次输入的密码不一致'
+  if (registerConfirmPassword.value !== registerPassword.value)
+    return '两次输入的密码不一致'
   return ''
 })
 
@@ -272,7 +258,10 @@ const openRegisterDialog = (): void => {
 const handleRegister = async (): Promise<void> => {
   if (!registerCanSubmit.value) return
   registerLoading.value = true
-  const result = await register(registerUsername.value.trim(), registerPassword.value)
+  const result = await register(
+    registerUsername.value.trim(),
+    registerPassword.value,
+  )
   registerLoading.value = false
   if (result.ok) {
     toast('注册成功', 'success')
@@ -400,35 +389,6 @@ const refreshSSOData = async (): Promise<void> => {
   ssoMergedRecords.value = merged
   // 结束加载
   ssoLoading.value = false
-}
-
-// 复制文本到剪贴板
-const copyText = async (value: unknown): Promise<void> => {
-  // 空值处理
-  const payload = value === null || value === undefined ? '' : String(value)
-  if (!payload) return
-  try {
-    // 优先用 Clipboard API
-    if (navigator?.clipboard?.writeText) {
-      await navigator.clipboard.writeText(payload)
-    } else {
-      // 回退：创建临时 textarea + execCommand
-      const textarea = document.createElement('textarea')
-      textarea.value = payload
-      textarea.style.position = 'fixed'
-      textarea.style.opacity = '0'
-      document.body.appendChild(textarea)
-      textarea.focus()
-      textarea.select()
-      document.execCommand('copy')
-      document.body.removeChild(textarea)
-    }
-    log.info('Token 已复制')
-    toast('已复制到剪贴板', 'success')
-  } catch {
-    // 复制失败：静默处理
-    return
-  }
 }
 
 // =====================
@@ -562,7 +522,9 @@ watch(
     <div class="toolbar">
       <!-- 当前应用名 -->
       <div class="info">
-        当前组织：<span v-if="selectedApp">{{ selectedApp.displayName || selectedApp.name }} · {{ selectedApp.name }}</span>
+        当前组织：<span v-if="selectedApp">{{
+          selectedApp.displayName || selectedApp.name
+        }}</span>
         <span v-else class="muted">未选择</span>
       </div>
 
@@ -590,99 +552,6 @@ watch(
     </div>
 
     <!-- ===================== -->
-    <!-- SSO 合并视图 -->
-    <!-- ===================== -->
-    <div v-if="showSSOView" class="ssoSection">
-      <!-- SSO 工具栏 -->
-      <div class="ssoToolbar">
-        <!-- 标题 -->
-        <div class="ssoTitle">SSO 账户与会话合并</div>
-        <!-- 类型筛选 + 刷新 -->
-        <div class="ssoControls">
-          <Select v-model="ssoFilterType" :options="ssoFilterOptions" />
-          <Button variant="subtle" @click="refreshSSOData">刷新</Button>
-        </div>
-      </div>
-
-      <!-- SSO 数据表格 -->
-      <div class="tableWrap">
-        <!-- 加载中 -->
-        <div v-if="ssoLoading" class="loading">
-          <Skeleton variant="text" :count="5" />
-        </div>
-        <!-- 空状态 -->
-        <EmptyState
-          v-else-if="filteredSsoRecords.length === 0"
-          title="暂无合并数据"
-        />
-        <!-- 表格 -->
-        <ScrollArea v-else>
-          <table class="dataTable">
-            <thead>
-              <tr>
-                <th>操作</th>
-                <th>用户名</th>
-                <th>类型</th>
-                <th>OpenID</th>
-                <th>UnionID</th>
-                <th>密码</th>
-                <th>Login Token</th>
-                <th>Matrix Token</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="row in filteredSsoRecords" :key="row.openid as string">
-                <!-- 操作按钮 -->
-                <td>
-                  <div class="ssoActions">
-                    <Button variant="subtle" @click="copyText(row.token)"
-                      >复制 LoginToken</Button
-                    >
-                    <Button variant="subtle" @click="copyText(row.matrix_token)"
-                      >复制 MatrixToken</Button
-                    >
-                  </div>
-                </td>
-                <!-- 数据列 -->
-                <td>{{ row.username }}</td>
-                <td>{{ row.atype }}</td>
-                <td>
-                  <div class="cellContent">{{ row.openid }}</div>
-                </td>
-                <td>
-                  <div class="cellContent">{{ row.wx_unionid }}</div>
-                </td>
-                <td>
-                  <div class="cellContent">{{ row.password }}</div>
-                </td>
-                <td>
-                  <div class="cellContent">{{ row.token }}</div>
-                </td>
-                <td>
-                  <div class="cellContent">{{ row.matrix_token }}</div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </ScrollArea>
-      </div>
-    </div>
-
-    <!-- ===================== -->
-    <!-- JSON 视图（workflows 特殊处理） -->
-    <!-- ===================== -->
-    <div
-      v-else-if="selectedBaseKey && selectedBaseKey === 'workflows'"
-      class="jsonViewer"
-    >
-      <ScrollArea>
-        <pre class="jsonPre">{{
-          JSON.stringify(baseData[selectedBaseKey] ?? [], null, 2)
-        }}</pre>
-      </ScrollArea>
-    </div>
-
-    <!-- ===================== -->
     <!-- 数据表格视图 -->
     <!-- ===================== -->
     <div v-else-if="rows.length" class="tableWrap">
@@ -703,17 +572,6 @@ watch(
             </tr>
           </tbody>
         </table>
-      </ScrollArea>
-    </div>
-
-    <!-- ===================== -->
-    <!-- 本层数据 JSON 视图 -->
-    <!-- ===================== -->
-    <div v-else-if="selectedBaseKey" class="jsonViewer">
-      <ScrollArea>
-        <pre class="jsonPre">{{
-          JSON.stringify(baseData[selectedBaseKey], null, 2)
-        }}</pre>
       </ScrollArea>
     </div>
 

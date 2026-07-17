@@ -41,7 +41,7 @@ const baseData = computed<Record<string, unknown>>(
 )
 
 // 需要隐藏的系统应用名称
-const HIDDEN_APP_NAMES = new Set([ 'A_SYSTEM_SSO'])
+const HIDDEN_APP_NAMES = new Set(['A_SYSTEM_SSO'])
 
 // 从 data 中提取 applications 数组，过滤掉系统内部应用
 const applications = computed<Array<Record<string, unknown>>>(() => {
@@ -133,7 +133,7 @@ const selectApp = (app: Record<string, unknown>): void => {
           <!-- 应用显示名（优先 displayName，其次 name） -->
           <div class="itemTitle">{{ app.displayName || app.name }}</div>
           <!-- 应用原始名称 -->
-          <div class="itemMeta">
+          <div class="itemMeta" v-if="false">
             <span class="itemName">{{ app.name }}</span>
           </div>
         </Button>
@@ -222,7 +222,6 @@ const selectApp = (app: Record<string, unknown>): void => {
     var(--spacing-sm); /* 内边距 */
   flex: 1; /* 占剩余空间 */
   min-height: 0; /* 允许收缩 */
-
 }
 
 /* 列表项按钮：基于 .btn.subtle + .btn.block，仅覆盖间距和颜色 */

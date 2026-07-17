@@ -216,13 +216,20 @@ async function runProbes(
               : []
           // 累加到全量数组
           allRows.push(...pageRows)
-          runProbesLog.info('分页获取', { key: probe.key, page, count: pageRows.length })
+          runProbesLog.info('分页获取', {
+            key: probe.key,
+            page,
+            count: pageRows.length,
+          })
           // 本页不满 → 最后一页，停止
           if (pageRows.length < pageSize) break
         }
         // 全量数组存入结果
         result.data[probe.key] = allRows
-        runProbesLog.info('全量获取完成', { key: probe.key, total: allRows.length })
+        runProbesLog.info('全量获取完成', {
+          key: probe.key,
+          total: allRows.length,
+        })
       } else {
         // =====================
         // 非分页端点：单次请求
@@ -517,7 +524,7 @@ export async function getCollectionDataByApplication(
   const actionUrl = `${targetCollection}:list`
 
   // 分页参数：外部传入 > 默认 pageSize 50
-  const pageSize = ((params?.pageSize as number) || 50)
+  const pageSize = (params?.pageSize as number) || 50
 
   getCollectionLog.info('全量查询 collection', {
     appName: targetApp,
@@ -541,14 +548,20 @@ export async function getCollectionDataByApplication(
   // =====================
   async function fetchAllPages(
     requestConfigFn: (page: number) => Record<string, unknown>,
-  ): Promise<{ data: unknown[] | null; error: Record<string, unknown> | null }> {
+  ): Promise<{
+    data: unknown[] | null
+    error: Record<string, unknown> | null
+  }> {
     const allRows: unknown[] = [] // 累积所有页
     try {
       for (let page = 1; page <= MAX_PAGE_FETCHES; page += 1) {
         const config = requestConfigFn(page) // 生成当前页的请求配置
-        const response = await byAppHeaderClient.request(config as Parameters<APIClient['request']>[0])
+        const response = await byAppHeaderClient.request(
+          config as Parameters<APIClient['request']>[0],
+        )
         // 提取本页数据
-        const pageData: unknown = response?.data?.data ?? response?.data ?? response
+        const pageData: unknown =
+          response?.data?.data ?? response?.data ?? response
         const pageRows: unknown[] = Array.isArray(pageData)
           ? pageData
           : (pageData as Record<string, unknown>)?.data
@@ -609,11 +622,17 @@ export async function getCollectionDataByApplication(
     appName: targetApp,
     collectionName: targetCollection,
     preferredMode,
-    headerCount: Array.isArray((attempts.appHeader as Record<string, unknown>)?.data)
-      ? ((attempts.appHeader as Record<string, unknown>).data as unknown[]).length
+    headerCount: Array.isArray(
+      (attempts.appHeader as Record<string, unknown>)?.data,
+    )
+      ? ((attempts.appHeader as Record<string, unknown>).data as unknown[])
+          .length
       : 0,
-    paramCount: Array.isArray((attempts.appParam as Record<string, unknown>)?.data)
-      ? ((attempts.appParam as Record<string, unknown>).data as unknown[]).length
+    paramCount: Array.isArray(
+      (attempts.appParam as Record<string, unknown>)?.data,
+    )
+      ? ((attempts.appParam as Record<string, unknown>).data as unknown[])
+          .length
       : 0,
   })
 

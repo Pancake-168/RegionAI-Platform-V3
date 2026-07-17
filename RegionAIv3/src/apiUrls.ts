@@ -8,7 +8,10 @@ import { SystemStorageManager } from '@/utils/SystemStorage'
  * 优先使用登录时保存的服务器地址，未配置则返回空字符串。
  */
 export function getNocobaseUrl(): string {
-  return (SystemStorageManager.getServerNocobaseUrlSync() || '').replace(/\/+$/, '')
+  return (SystemStorageManager.getServerNocobaseUrlSync() || '').replace(
+    /\/+$/,
+    '',
+  )
 }
 
 /**
@@ -16,7 +19,10 @@ export function getNocobaseUrl(): string {
  * 优先级：已保存的 NocoBase 地址 → 空字符串。
  */
 export function getNocobaseProxyUrl(): string {
-  return (SystemStorageManager.getServerNocobaseUrlSync() || '').replace(/\/+$/, '')
+  return (SystemStorageManager.getServerNocobaseUrlSync() || '').replace(
+    /\/+$/,
+    '',
+  )
 }
 
 // =====================
