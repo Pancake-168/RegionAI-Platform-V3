@@ -57,8 +57,7 @@
 
   /* ---- 字体 ---- */
   --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-heading:
-    '优设标题黑', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
 
   /* ---- 字号 ---- */
@@ -99,7 +98,7 @@
 :root[data-theme='light'] {
   --bg: #ffffff;
   --bg-elev: #ffffff;
-  --glass: rgba(0, 0, 0, 0.02);
+  --glass: rgba(255, 255, 255, 0.7);
   --glass-brd: rgba(0, 0, 0, 0.08);
 
   --text: #0c1117;

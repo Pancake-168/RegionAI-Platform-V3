@@ -1,6 +1,6 @@
 // NocoBase URL 配置与解析工具
 // 提供 URL 相对/绝对互转、登录认证函数
-import { NOCOBASE_URL, getNocobaseUrl } from '@/apiUrls' // 从 apiUrls 读取环境变量配置
+import { getNocobaseUrl } from '@/apiUrls'
 import { APIClient } from '@nocobase/sdk' // NocoBase SDK APIClient
 import { nocoBaseService } from '@/services/NocoBase/client' // 全局单例客户端管理器
 import { createLogger } from '@/utils/logger' // 项目日志体系
@@ -12,6 +12,7 @@ import { createLogger } from '@/utils/logger' // 项目日志体系
 // =====================
 
 // 创建工具函数的 logger 实例
+const urlLog = createLogger('url.ts', 'getNocoBaseHosts')
 const resolveLog = createLogger('url.ts', 'resolveNocoBaseFullUrl')
 
 /**
@@ -21,7 +22,7 @@ const resolveLog = createLogger('url.ts', 'resolveNocoBaseFullUrl')
  */
 function getCleanNocoBase(): string {
   // 读取环境变量，trim 后去掉末尾所有斜杠
-  return (getNocobaseUrl() || NOCOBASE_URL || '').replace(/\/+$/, '')
+  return getNocobaseUrl().replace(/\/+$/, '')
 }
 
 /**

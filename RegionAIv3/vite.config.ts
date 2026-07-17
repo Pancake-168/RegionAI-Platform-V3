@@ -23,9 +23,7 @@ export default defineConfig(async () => ({
     },
   },
 
-  // 允许 NOCOBASE_ 前缀的环境变量注入前端（默认只注入 VITE_ 前缀）
-  // 不在此处添加 Login_/MATRIX_ 等前缀 — 它们属于 SSO/IM 模块，不在后台管理范围
-  envPrefix: ['VITE_', 'NOCOBASE_'],
+  envPrefix: ['VITE_'],
 
   // Vite options tailored for Tauri development
   clearScreen: false,
@@ -50,27 +48,8 @@ export default defineConfig(async () => ({
     },
 
     // =====================
-    // 代理规则 — 开发环境将 API 请求转发到后端，避免 CORS
+    // 代理规则
     // =====================
-    proxy: {
-      // NocoBase API 代理：
-      // 前端发往 /nocobase-proxy/xxx 的请求 → 去掉前缀后转发到 NOCOBASE_URL
-      '/nocobase-proxy': {
-        target: process.env.NOCOBASE_URL || 'https://t8960.zheshu.tech',
-        changeOrigin: true, // 修改请求头中的 Host 为目标地址
-        // 去掉 /nocobase-proxy 前缀，只保留路径部分
-        rewrite: (path) => path.replace(/^\/nocobase-proxy/, ''),
-        secure: false, // 不校验 SSL 证书（局域网自签证书场景）
-        ws: true, // 支持 WebSocket 代理
-      },
-
-      // 通用 API 代理：
-      // 前端发往 /api/xxx 的请求 → 转发到 VITE_API_BASE
-      '/api': {
-        target: process.env.VITE_API_BASE || 'http://localhost:8080',
-        changeOrigin: true,
-        secure: false,
-      },
-    },
+    proxy: {},
   },
 }))

@@ -6,10 +6,12 @@ import { computed, ref, watch } from 'vue' // Vue 响应式 API
 import { createLogger } from '@/utils/logger' // 项目日志体系
 import {
   Button,
+  Dialog,
   EmptyState,
-  Skeleton,
-  Select,
+  Input,
   ScrollArea,
+  Select,
+  Skeleton,
 } from '@/components/common' // 通用组件
 import type { SelectOption } from '@/components/common/types' // Select 选项类型
 import { toast } from '@/composables/useToast' // Toast 通知函数
@@ -18,6 +20,7 @@ import {
   getAllAvailableNocoBaseInfoByApplication,
   getCollectionDataByApplication,
 } from '@/services/NocoBase/data/info'
+import { register } from '@/services/Project/SSO/LoginOrRegister'
 
 // 创建 logger 实例
 const log = createLogger('MainContent.vue', 'MainContent')
@@ -122,25 +125,32 @@ const rows = computed<Array<Record<string, unknown>>>(() => {
   return Array.isArray(data) ? (data as Array<Record<string, unknown>>) : []
 })
 
-// 动态列：从所有行数据中提取唯一的 key 集合作为表头
+// 表格中需要隐藏的系统字段
+const HIDDEN_COLUMNS = new Set(['createdAt', 'updatedAt', 'createdById', 'updatedById'])
+
+// 动态列：从所有行数据中提取唯一的 key 集合作为表头，排除系统字段
 const columns = computed<string[]>(() => {
   // 无数据则无列
   if (!rows.value.length) return []
   // 用 Set 收集所有行中出现的 key
   const colSet = new Set<string>()
   rows.value.forEach((row) => {
-    Object.keys(row || {}).forEach((key) => colSet.add(key))
+    Object.keys(row || {}).forEach((key) => {
+      if (!HIDDEN_COLUMNS.has(key)) colSet.add(key)
+    })
   })
   // 转数组返回
   return Array.from(colSet)
 })
 
-// collections 的 Select 选项（从 appCollections 映射为 SelectOption[]）
+// collections 的 Select 选项（仅渲染 users 表）
 const collectionSelectOptions = computed<SelectOption[]>(() =>
-  appCollections.value.map((col) => ({
-    value: col.name as string, // option 值
-    label: col.name as string, // option 显示文本
-  })),
+  appCollections.value
+    .filter((col) => col.name === 'users')
+    .map((col) => ({
+      value: col.name as string, // option 值
+      label: col.name as string, // option 显示文本
+    })),
 )
 
 // SSO 类型筛选的 Select 选项（静态常量）
@@ -211,6 +221,66 @@ const formatCell = (value: unknown): string => {
 // 获取行的唯一 key
 const rowKey = (row: Record<string, unknown>, index: number): string =>
   String(row?.id ?? row?.key ?? index)
+
+// =====================
+// 注册功能
+// =====================
+
+const registerDialogOpen = ref<boolean>(false)
+const registerUsername = ref<string>('')
+const registerPassword = ref<string>('')
+const registerConfirmPassword = ref<string>('')
+const registerLoading = ref<boolean>(false)
+
+// 账号校验：不能含大写字母，不能为空
+const registerUsernameError = computed<string>(() => {
+  const val = registerUsername.value
+  if (!val) return ''
+  if (/[A-Z]/.test(val)) return '账号不能包含大写字母'
+  return ''
+})
+
+// 确认密码校验
+const registerConfirmError = computed<string>(() => {
+  if (!registerConfirmPassword.value) return ''
+  if (registerConfirmPassword.value !== registerPassword.value) return '两次输入的密码不一致'
+  return ''
+})
+
+// 注册按钮是否可提交
+const registerCanSubmit = computed<boolean>(() => {
+  const username = registerUsername.value.trim()
+  const password = registerPassword.value
+  const confirm = registerConfirmPassword.value
+  return (
+    username.length > 0 &&
+    !/[A-Z]/.test(username) &&
+    password.length > 0 &&
+    password === confirm
+  )
+})
+
+// 打开注册弹窗
+const openRegisterDialog = (): void => {
+  registerUsername.value = ''
+  registerPassword.value = ''
+  registerConfirmPassword.value = ''
+  registerDialogOpen.value = true
+}
+
+// 提交注册
+const handleRegister = async (): Promise<void> => {
+  if (!registerCanSubmit.value) return
+  registerLoading.value = true
+  const result = await register(registerUsername.value.trim(), registerPassword.value)
+  registerLoading.value = false
+  if (result.ok) {
+    toast('注册成功', 'success')
+    registerDialogOpen.value = false
+  } else {
+    toast(result.error || '注册失败', 'error')
+  }
+}
 
 // =====================
 // 事件处理
@@ -492,12 +562,15 @@ watch(
     <div class="toolbar">
       <!-- 当前应用名 -->
       <div class="info">
-        当前应用：<span v-if="selectedApp">{{ selectedApp.name }}</span>
+        当前组织：<span v-if="selectedApp">{{ selectedApp.displayName || selectedApp.name }} · {{ selectedApp.name }}</span>
         <span v-else class="muted">未选择</span>
       </div>
 
       <!-- 刷新按钮 -->
       <Button variant="subtle" @click="refresh">刷新数据</Button>
+
+      <!-- 注册按钮 -->
+      <Button variant="primary" @click="openRegisterDialog">注册</Button>
 
       <!-- SSO 切换按钮：仅 A_SYSTEM_SSO 应用显示 -->
       <Button v-if="isSSOApp" variant="subtle" @click="toggleSSOView">
@@ -656,10 +729,51 @@ watch(
     <div v-else class="centerState">
       <EmptyState
         title="请选择数据项查看详情"
-        description="从左侧面板选择子应用或本层数据分组"
+        description="从左侧面板选择组织或本层数据分组"
       />
     </div>
   </div>
+
+  <!-- ===================== -->
+  <!-- 注册弹窗 -->
+  <!-- ===================== -->
+  <Dialog
+    :open="registerDialogOpen"
+    title="注册新账号"
+    description="注册后可在 SSO 统一认证系统中使用"
+    @update:open="registerDialogOpen = $event"
+  >
+    <div class="registerForm">
+      <Input
+        v-model="registerUsername"
+        label="账号"
+        placeholder="小写字母、数字、特殊字符"
+        :error="registerUsernameError"
+      />
+      <Input
+        v-model="registerPassword"
+        label="密码"
+        type="password"
+        placeholder="请输入密码"
+      />
+      <Input
+        v-model="registerConfirmPassword"
+        label="确认密码"
+        type="password"
+        placeholder="请再次输入密码"
+        :error="registerConfirmError"
+      />
+      <Button
+        variant="primary"
+        block
+        :disabled="!registerCanSubmit"
+        :loading="registerLoading"
+        @click="handleRegister"
+      >
+        注册
+      </Button>
+    </div>
+  </Dialog>
 </template>
 
 <style scoped>
@@ -819,5 +933,12 @@ watch(
   text-align: center; /* 居中 */
   color: var(--muted); /* 弱文字色 */
   font-size: var(--text-sm); /* 小字号 */
+}
+
+/* 注册表单 */
+.registerForm {
+  display: flex; /* flex */
+  flex-direction: column; /* 纵向 */
+  gap: var(--spacing-lg); /* 字段间距 */
 }
 </style>

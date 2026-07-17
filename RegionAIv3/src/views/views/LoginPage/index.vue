@@ -3,6 +3,9 @@
   <div class="login-page">
     <!-- 登录卡片：毛玻璃面板 -->
     <div class="login-card">
+      <!-- 标题 -->
+      <h1 class="login-title">RegionAI管理后台</h1>
+
       <!-- 区域 1：扫描状态（仅 Tauri 桌面端展示） -->
       <div v-if="isTauriRuntime" class="discover-status">
         <!-- 子状态 A：扫描进行中 — 旋转动画圆点 + 文字 + 轮次 -->
@@ -371,6 +374,15 @@ onMounted(async () => {
   border: 1px solid var(--border); /* 半透明边框 */
   box-shadow: var(--shadow-md); /* 中等阴影 */
   gap: var(--spacing-lg); /* 子元素间距 12px */
+}
+
+/* ---- 标题 ---- */
+.login-title {
+  margin: 0; /* 清除默认 margin */
+  font-size: var(--text-md); /* 14px */
+  font-weight: 600; /* 加粗 */
+  color: var(--text); /* 主文字色 */
+  text-align: center; /* 居中 */
 }
 
 /* ---- 表单组容器 ---- */

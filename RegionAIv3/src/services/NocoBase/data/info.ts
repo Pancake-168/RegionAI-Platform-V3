@@ -1,8 +1,8 @@
-// NocoBase 数据探测引擎 — 核心数据获取层
-// 负责从已认证的 NocoBase 客户端批量获取可用数据：
+// NocoBase 数据获取引擎 — 核心数据获取层
+// 所有数据获取均为全量分页循环拉取，不遗漏任何行
 //   - 根层级：用户信息、子应用列表、collections、roles、users、路由、schema、工作流
 //   - 子应用层级：指定 app 下的 collections、users 等（支持 x-app header / __appName param 双模式）
-//   - Collection 数据：指定 collection 的分页数据
+//   - Collection 数据：指定 collection 的全量数据
 //   - UI Schema：指定 schema 的 JSON 树形结构
 //   - 页面标题：从 NocoBase URL 自动解析页面标题
 import { nocoBaseService } from '@/services/NocoBase/client' // 全局单例客户端管理器
@@ -10,6 +10,13 @@ import { APIClient } from '@nocobase/sdk' // NocoBase SDK APIClient
 import { getNocobaseUrl, getNocobaseProxyUrl } from '@/apiUrls' // URL 配置读取
 import { loginByAccount } from '@/services/NocoBase/url' // 账号密码登录函数
 import { isTauri } from '@/utils/isTauri' // Tauri 运行时检测
+
+// =====================
+// 常量
+// =====================
+
+// 最大分页循环次数（防止死循环：200 页 × 500 条 = 最多 100000 条）
+const MAX_PAGE_FETCHES = 200
 import { createLogger } from '@/utils/logger' // 项目日志体系
 
 // =====================
@@ -183,17 +190,54 @@ async function runProbes(
   // 串行遍历探测端点列表（for...of + await 保证顺序执行）
   for (const probe of probes) {
     try {
-      // 发送请求：使用 SDK 的 resource:action 格式 URL
-      const response = await client.request({
-        url: probe.url, // 如 'users:list'
-        params: probe.params, // 如 { page: 1, pageSize: 200 }
-        ...(extraRequestConfig || {}), // 合并额外配置
-      })
-      // 提取数据：优先取 response.data.data，其次 response.data，最后原始 response
-      result.data[probe.key] =
-        response?.data?.data ?? response?.data ?? response
+      // 判断是否分页端点：params 中含 page 和 pageSize 的为分页端点
+      const pageSize = (probe.params?.pageSize as number) || 0
+      const isPaginated = pageSize > 0 && probe.params?.page !== undefined
+
+      if (isPaginated) {
+        // =====================
+        // 分页端点：循环拉取全量数据
+        // =====================
+        const allRows: unknown[] = [] // 累积所有页的数据行
+        for (let page = 1; page <= MAX_PAGE_FETCHES; page += 1) {
+          const response = await client.request({
+            url: probe.url, // 如 'users:list'
+            params: { ...(probe.params || {}), page }, // 更新页码
+            ...(extraRequestConfig || {}), // 合并额外配置
+          })
+          // 提取本页数据：优先 response.data.data → response.data → response
+          const pageData: unknown =
+            response?.data?.data ?? response?.data ?? response
+          // 提取数组行
+          const pageRows: unknown[] = Array.isArray(pageData)
+            ? pageData
+            : (pageData as Record<string, unknown>)?.data
+              ? ((pageData as Record<string, unknown>).data as unknown[])
+              : []
+          // 累加到全量数组
+          allRows.push(...pageRows)
+          runProbesLog.info('分页获取', { key: probe.key, page, count: pageRows.length })
+          // 本页不满 → 最后一页，停止
+          if (pageRows.length < pageSize) break
+        }
+        // 全量数组存入结果
+        result.data[probe.key] = allRows
+        runProbesLog.info('全量获取完成', { key: probe.key, total: allRows.length })
+      } else {
+        // =====================
+        // 非分页端点：单次请求
+        // =====================
+        const response = await client.request({
+          url: probe.url, // 如 'users:me'
+          params: probe.params, // 无分页参数
+          ...(extraRequestConfig || {}), // 合并额外配置
+        })
+        // 提取数据：优先取 response.data.data，其次 response.data，最后原始 response
+        result.data[probe.key] =
+          response?.data?.data ?? response?.data ?? response
+        runProbesLog.info('探测成功', { key: probe.key })
+      }
       okCount++
-      runProbesLog.info('探测成功', { key: probe.key })
     } catch (error: unknown) {
       // 请求失败时记录错误信息
       const err = error as { message?: string; response?: { status?: number } }
@@ -472,16 +516,13 @@ export async function getCollectionDataByApplication(
   // 构建 SDK action URL：collectionName:list
   const actionUrl = `${targetCollection}:list`
 
-  // 合并参数：默认 page 1, pageSize 20
-  const finalParams = {
-    page: 1, // 默认第 1 页
-    pageSize: 20, // 默认每页 20 条
-    ...(params || {}), // 外部参数覆盖默认值
-  }
+  // 分页参数：外部传入 > 默认 pageSize 50
+  const pageSize = ((params?.pageSize as number) || 50)
 
-  getCollectionLog.info('查询 collection', {
+  getCollectionLog.info('全量查询 collection', {
     appName: targetApp,
     collectionName: targetCollection,
+    pageSize,
   })
 
   // 创建客户端
@@ -496,59 +537,66 @@ export async function getCollectionDataByApplication(
   }
 
   // =====================
-  // appHeader 模式
+  // 辅助函数：全量分页循环拉取
   // =====================
-  try {
-    const response = await byAppHeaderClient.request({
-      url: actionUrl,
-      params: finalParams,
-      headers: {
-        'x-app': targetApp, // 通过 header 切换子应用
-      },
-    })
-    // 提取数据
-    attempts.appHeader = {
-      data: response?.data?.data ?? response?.data ?? response,
-      error: null,
-    }
-  } catch (error: unknown) {
-    const err = error as { message?: string; response?: { status?: number } }
-    attempts.appHeader = {
-      data: null,
-      error: {
-        message: err?.message || String(error),
-        status: err?.response?.status,
-        url: actionUrl,
-      },
+  async function fetchAllPages(
+    requestConfigFn: (page: number) => Record<string, unknown>,
+  ): Promise<{ data: unknown[] | null; error: Record<string, unknown> | null }> {
+    const allRows: unknown[] = [] // 累积所有页
+    try {
+      for (let page = 1; page <= MAX_PAGE_FETCHES; page += 1) {
+        const config = requestConfigFn(page) // 生成当前页的请求配置
+        const response = await byAppHeaderClient.request(config as Parameters<APIClient['request']>[0])
+        // 提取本页数据
+        const pageData: unknown = response?.data?.data ?? response?.data ?? response
+        const pageRows: unknown[] = Array.isArray(pageData)
+          ? pageData
+          : (pageData as Record<string, unknown>)?.data
+            ? ((pageData as Record<string, unknown>).data as unknown[])
+            : []
+        // 累加
+        allRows.push(...pageRows)
+        getCollectionLog.info('分页获取', {
+          appName: targetApp,
+          collectionName: targetCollection,
+          page,
+          count: pageRows.length,
+        })
+        // 本页不满 → 最后一页
+        if (pageRows.length < pageSize) break
+      }
+      return { data: allRows, error: null }
+    } catch (error: unknown) {
+      const err = error as { message?: string; response?: { status?: number } }
+      return {
+        data: null,
+        error: {
+          message: err?.message || String(error),
+          status: err?.response?.status,
+          url: actionUrl,
+        },
+      }
     }
   }
 
   // =====================
-  // appParam 模式
+  // appHeader 模式：全量分页
   // =====================
-  try {
-    const response = await byAppHeaderClient.request({
-      url: actionUrl,
-      params: {
-        ...finalParams,
-        __appName: targetApp, // 通过参数切换子应用
-      },
-    })
-    attempts.appParam = {
-      data: response?.data?.data ?? response?.data ?? response,
-      error: null,
-    }
-  } catch (error: unknown) {
-    const err = error as { message?: string; response?: { status?: number } }
-    attempts.appParam = {
-      data: null,
-      error: {
-        message: err?.message || String(error),
-        status: err?.response?.status,
-        url: actionUrl,
-      },
-    }
-  }
+  const headerResult = await fetchAllPages((page: number) => ({
+    url: actionUrl,
+    params: { ...(params || {}), page, pageSize },
+    headers: { 'x-app': targetApp },
+  }))
+  attempts.appHeader = headerResult
+
+  // =====================
+  // appParam 模式：全量分页
+  // =====================
+  const paramResult = await fetchAllPages((page: number) => ({
+    url: actionUrl,
+    params: { ...(params || {}), page, pageSize, __appName: targetApp },
+  }))
+  attempts.appParam = paramResult
 
   // 自动选择 preferred 模式：优先 appHeader，其次 appParam，都无则 'none'
   const preferredMode = (attempts.appHeader as Record<string, unknown>)?.data
@@ -557,10 +605,16 @@ export async function getCollectionDataByApplication(
       ? 'appParam'
       : 'none'
 
-  getCollectionLog.info('查询完成', {
+  getCollectionLog.info('全量查询完成', {
     appName: targetApp,
     collectionName: targetCollection,
     preferredMode,
+    headerCount: Array.isArray((attempts.appHeader as Record<string, unknown>)?.data)
+      ? ((attempts.appHeader as Record<string, unknown>).data as unknown[]).length
+      : 0,
+    paramCount: Array.isArray((attempts.appParam as Record<string, unknown>)?.data)
+      ? ((attempts.appParam as Record<string, unknown>).data as unknown[]).length
+      : 0,
   })
 
   return {

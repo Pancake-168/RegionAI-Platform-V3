@@ -747,6 +747,9 @@ class SystemStorage {
     const v = await getSetting<string>(this.keyServerApiBaseUrl)
     return v || null
   }
+  getServerApiBaseUrlSync(): string | null {
+    return this.getSyncString(this.keyServerApiBaseUrl)
+  }
   async setServerApiBaseUrl(url: string): Promise<boolean> {
     return await setSetting(this.keyServerApiBaseUrl, url)
   }
@@ -754,12 +757,18 @@ class SystemStorage {
     const v = await getSetting<string>(this.keyServerMatrixUrl)
     return v || null
   }
+  getServerMatrixUrlSync(): string | null {
+    return this.getSyncString(this.keyServerMatrixUrl)
+  }
   async setServerMatrixUrl(url: string): Promise<boolean> {
     return await setSetting(this.keyServerMatrixUrl, url)
   }
   async getServerNocobaseUrl(): Promise<string | null> {
     const v = await getSetting<string>(this.keyServerNocobaseUrl)
     return v || null
+  }
+  getServerNocobaseUrlSync(): string | null {
+    return this.getSyncString(this.keyServerNocobaseUrl)
   }
   async setServerNocobaseUrl(url: string): Promise<boolean> {
     return await setSetting(this.keyServerNocobaseUrl, url)

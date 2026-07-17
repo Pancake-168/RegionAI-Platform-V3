@@ -40,11 +40,17 @@ const baseData = computed<Record<string, unknown>>(
   () => (props.info?.data as Record<string, unknown>) || {},
 )
 
-// 从 data 中提取 applications 数组
+// 需要隐藏的系统应用名称
+const HIDDEN_APP_NAMES = new Set([ 'A_SYSTEM_SSO'])
+
+// 从 data 中提取 applications 数组，过滤掉系统内部应用
 const applications = computed<Array<Record<string, unknown>>>(() => {
   // 取 applications 字段，是数组则返回，否则返回空数组
   const list = baseData.value?.applications
-  return Array.isArray(list) ? (list as Array<Record<string, unknown>>) : []
+  if (!Array.isArray(list)) return []
+  return (list as Array<Record<string, unknown>>).filter(
+    (app) => !HIDDEN_APP_NAMES.has(app.name as string),
+  )
 })
 
 // 从 data 中提取本层数据分组：排除 applications/uiSchemas/uiSchemasTree/uiRoutes 外的所有数组 key
@@ -107,9 +113,7 @@ const selectApp = (app: Record<string, unknown>): void => {
     <!-- 子应用列表区域 -->
     <div class="header">
       <!-- 标题 -->
-      <div class="title">子应用列表</div>
-      <!-- 副标题 -->
-      <div class="subtitle">Applications</div>
+      <div class="title">组织列表</div>
     </div>
 
     <!-- 子应用列表容器 -->
@@ -137,13 +141,13 @@ const selectApp = (app: Record<string, unknown>): void => {
     </div>
 
     <!-- 本层数据分组 -->
-    <div class="headerSecondary">
+    <div class="headerSecondary" v-if="false">
       <div class="title">本层数据</div>
       <div class="subtitle">Base</div>
     </div>
 
     <!-- 本层数据列表 -->
-    <div class="list">
+    <div class="list" v-if="false">
       <!-- 空状态 -->
       <EmptyState v-if="!baseGroups.length" title="暂无数据" />
       <!-- 列表项 -->

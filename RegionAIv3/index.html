@@ -2,6 +2,17 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self' http: https: blob: data:;
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:* http://127.0.0.1:* https://t8962.zheshu.tech https://ai.zheshu.tech https://unpkg.com;
+       style-src 'self' 'unsafe-inline' http://localhost:* http://127.0.0.1:* https://unpkg.com;
+       img-src 'self' data: http: https: blob:;
+       font-src 'self' data: http: https:;
+       connect-src 'self' blob: http: https: ws: wss:;
+      media-src 'self' http: https: blob: data:;
+      frame-src 'self' blob: http: https:;"
+    />
     <link rel="icon" type="image/svg+xml" href="/yanjing-logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Region-AI-Platform-V3</title>
