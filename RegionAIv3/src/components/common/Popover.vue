@@ -26,7 +26,12 @@ withDefaults(
       <span><slot name="trigger" /></span>
     </PopoverTrigger>
     <PopoverPortal>
-      <PopoverContent :class="styles.content" :side="side" :align="align" :side-offset="6">
+      <PopoverContent
+        :class="styles.content"
+        :side="side"
+        :align="align"
+        :side-offset="6"
+      >
         <slot />
         <PopoverArrow :class="styles.arrow" />
       </PopoverContent>

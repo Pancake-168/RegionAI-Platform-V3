@@ -11,8 +11,12 @@ useTheme()
     <div class="app-layout">
       <TauriBar />
       <div class="main-page">
-        <nav class="app-nav" v-if="false">
-          <!-- 导航链接后续配置 -->
+        <nav class="app-nav">
+          <!-- 首页导航链接 -->
+          <router-link to="/">首页</router-link>
+          <!-- 后台管理导航链接 -->
+          <router-link to="/admin">后台管理</router-link>
+          <router-link to="/demo">demo</router-link>
         </nav>
         <div class="app-content">
           <router-view />

@@ -32,7 +32,12 @@ withDefaults(
       <component :is="trigger" />
     </DropdownMenuTrigger>
     <DropdownMenuPortal>
-      <DropdownMenuContent :class="styles.content" :side="side" :align="align" :side-offset="4">
+      <DropdownMenuContent
+        :class="styles.content"
+        :side="side"
+        :align="align"
+        :side-offset="4"
+      >
         <MenuItemRenderer
           v-for="(item, i) in items"
           :key="i"

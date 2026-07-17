@@ -14,7 +14,17 @@ defineProps<{
 
 <template>
   <ScrollAreaRoot :class="styles.root">
-    <ScrollAreaViewport :class="styles.viewport" :style="maxHeight ? { maxHeight: typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight } : undefined">
+    <ScrollAreaViewport
+      :class="styles.viewport"
+      :style="
+        maxHeight
+          ? {
+              maxHeight:
+                typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight,
+            }
+          : undefined
+      "
+    >
       <slot />
     </ScrollAreaViewport>
     <ScrollAreaScrollbar :class="styles.scrollbar" orientation="vertical">

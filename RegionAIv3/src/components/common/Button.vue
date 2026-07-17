@@ -8,6 +8,7 @@ withDefaults(
     loadingText?: string
     type?: 'button' | 'submit'
     disabled?: boolean
+    block?: boolean
   }>(),
   {
     variant: 'primary',
@@ -15,6 +16,7 @@ withDefaults(
     loadingText: '请稍候...',
     type: 'button',
     disabled: false,
+    block: false,
   },
 )
 
@@ -26,7 +28,7 @@ defineEmits<{
 <template>
   <button
     :type="type"
-    :class="['btn', variant, { spinning: loading }]"
+    :class="['btn', variant, { spinning: loading, block: block }]"
     :disabled="disabled || loading ? true : undefined"
     @click="loading ? undefined : $emit('click', $event)"
   >

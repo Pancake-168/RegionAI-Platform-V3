@@ -2,7 +2,6 @@ export type UserTheme = 'light' | 'dark' | 'light-blue'
 export type FunctionListMode = 'drawer' | 'fixed'
 export type DisplayScale = 0.5 | 0.75 | 0.9 | 1 | 1.1 | 1.25 | 1.5 | 1.75 | 2
 
-
 /** 收件箱事件条目 — EventCenter 和 EventInboxStore 共用 */
 export interface EventInboxEntry {
   event_id: string // 事件 UUID，与 Socket.IO 推送和 GetLog 的 event_id 一致，去重键
@@ -12,13 +11,10 @@ export interface EventInboxEntry {
   executed: boolean // 是否已执行处理任务（客户端人为标记，同步到 UserConfig）
 }
 
-
 /** 事件收件箱持久化结构 — 写入 UserConfig.eventInbox */
 export interface EventInboxConfig {
   entries: EventInboxEntry[] // 按 occurred_at 倒序，最新在前
 }
-
-
 
 export interface UserConfig {
   theme?: UserTheme
@@ -36,4 +32,3 @@ export interface UserConfig {
   workbench?: import('@/views/views/Pages/WorkbenchPageV2/constants').WorkbenchConfig
   eventInbox?: EventInboxConfig
 }
-

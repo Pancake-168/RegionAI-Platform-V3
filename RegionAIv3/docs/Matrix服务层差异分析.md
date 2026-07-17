@@ -1,6 +1,7 @@
 # Matrix 服务层差异分析
 
 > 对比项目：
+>
 > - **项目1（YanJing-Matrix-Platform）**: `D:\Region\YanJing-Matrix-Platform\YanJing-Matrix-Platform`
 > - **项目2（RegionAI-Platform2）**: `D:\Region\RegionAI-Platform2\RegionAI-Platform`
 >
@@ -12,39 +13,39 @@
 
 ### 1.1 项目1独有、项目2缺失的文件
 
-| 文件 | 说明 |
-|------|------|
-| `Matrix/space.ts` | Space（空间）父空间反查逻辑，约480行 |
-| `Matrix/refreshRoomState.ts` | 房间状态统一刷新函数，约240行 |
+| 文件                         | 说明                                 |
+| ---------------------------- | ------------------------------------ |
+| `Matrix/space.ts`            | Space（空间）父空间反查逻辑，约480行 |
+| `Matrix/refreshRoomState.ts` | 房间状态统一刷新函数，约240行        |
 
 ### 1.2 项目2独有、项目1缺失的文件
 
-| 文件 | 说明 |
-|------|------|
-| `Matrix/classification/classifier.ts` | **房间分类核心算法**，约690行 |
-| `Matrix/classification/displayResolver.ts` | 分类结果→UI外显视图解析，约170行 |
-| `Matrix/classification/memberTypeResolver.ts` | 成员类型（user/bot）批量解析，约130行 |
-| `Matrix/classification/systemRoomRules.ts` | 系统房间识别规则与外显名拼装，约120行 |
-| `Matrix/incrementalClassify.ts` | 增量房间分类事件监听与队列，约135行 |
-| `Matrix/serverNotice.ts` | Server Notices 房间检测与信息dump，约300行 |
+| 文件                                          | 说明                                       |
+| --------------------------------------------- | ------------------------------------------ |
+| `Matrix/classification/classifier.ts`         | **房间分类核心算法**，约690行              |
+| `Matrix/classification/displayResolver.ts`    | 分类结果→UI外显视图解析，约170行           |
+| `Matrix/classification/memberTypeResolver.ts` | 成员类型（user/bot）批量解析，约130行      |
+| `Matrix/classification/systemRoomRules.ts`    | 系统房间识别规则与外显名拼装，约120行      |
+| `Matrix/incrementalClassify.ts`               | 增量房间分类事件监听与队列，约135行        |
+| `Matrix/serverNotice.ts`                      | Server Notices 房间检测与信息dump，约300行 |
 
 ### 1.3 双方共有的Matrix文件
 
-| 文件 | 项目1行数 | 项目2行数 | 差异程度 |
-|------|----------|----------|---------|
-| `Matrix/client.ts` | 571 | 946 | **重大差异** |
-| `Matrix/eventManager.ts` | 451 | 581 | 中等差异（日志替换+参数结构语义变化） |
-| `Matrix/indexeddbStore.ts` | 93 | 103 | 微小差异（格式化） |
-| `Matrix/message.ts` | 821 | 1048 | **重大差异**（HTML化+turnId移除+指纹缓存+日志迁移） |
-| `Matrix/profile.ts` | 88 | 97 | 微小差异（格式化） |
-| `Matrix/room.ts` | 341 | 405 | 中等差异 |
-| `Matrix/roomManagement.ts` | 404 | 554 | 微小差异（日志替换+格式化） |
-| `Matrix/search.ts` | 146 | 193 | 微小差异（日志替换+格式化） |
-| `Matrix/timeline.ts` | 377 | 433 | 微小差异（格式化） |
-| `Matrix/MSG/sendMessage.ts` | 64 | 109 | 中等差异 |
-| `Matrix/MSGOperations/MsgDelete.ts` | 301 | 342 | 微小差异（格式化） |
-| `Matrix/MSGOperations/MsgForward.ts` | 106 | 58 | **重大差异** |
-| `Matrix/MSGOperations/MsgViewSource.ts` | 53 | 69 | 微小差异（格式化） |
+| 文件                                    | 项目1行数 | 项目2行数 | 差异程度                                            |
+| --------------------------------------- | --------- | --------- | --------------------------------------------------- |
+| `Matrix/client.ts`                      | 571       | 946       | **重大差异**                                        |
+| `Matrix/eventManager.ts`                | 451       | 581       | 中等差异（日志替换+参数结构语义变化）               |
+| `Matrix/indexeddbStore.ts`              | 93        | 103       | 微小差异（格式化）                                  |
+| `Matrix/message.ts`                     | 821       | 1048      | **重大差异**（HTML化+turnId移除+指纹缓存+日志迁移） |
+| `Matrix/profile.ts`                     | 88        | 97        | 微小差异（格式化）                                  |
+| `Matrix/room.ts`                        | 341       | 405       | 中等差异                                            |
+| `Matrix/roomManagement.ts`              | 404       | 554       | 微小差异（日志替换+格式化）                         |
+| `Matrix/search.ts`                      | 146       | 193       | 微小差异（日志替换+格式化）                         |
+| `Matrix/timeline.ts`                    | 377       | 433       | 微小差异（格式化）                                  |
+| `Matrix/MSG/sendMessage.ts`             | 64        | 109       | 中等差异                                            |
+| `Matrix/MSGOperations/MsgDelete.ts`     | 301       | 342       | 微小差异（格式化）                                  |
+| `Matrix/MSGOperations/MsgForward.ts`    | 106       | 58        | **重大差异**                                        |
+| `Matrix/MSGOperations/MsgViewSource.ts` | 53        | 69        | 微小差异（格式化）                                  |
 
 ---
 
@@ -56,19 +57,24 @@
 
 #### 2.1.1 日志系统替换（全文件级别）
 
-| 方面 | 项目1 | 项目2 |
-|------|-------|-------|
+| 方面     | 项目1                                            | 项目2                                                    |
+| -------- | ------------------------------------------------ | -------------------------------------------------------- |
 | 日志方式 | `console.log` / `console.warn` / `console.error` | `logInfo` / `logWarn` / `logError` from `@/utils/logger` |
-| 日志格式 | `console.warn('[System:...] msg', data)` | `logWarn("MatrixClient", "", "[System:...] msg", data)` |
-| 日志分类 | 无 | 带模块名（第一个参数）+ 子分类（第二个参数） |
+| 日志格式 | `console.warn('[System:...] msg', data)`         | `logWarn("MatrixClient", "", "[System:...] msg", data)`  |
+| 日志分类 | 无                                               | 带模块名（第一个参数）+ 子分类（第二个参数）             |
 
 项目2的所有日志调用都增加了模块名和子分类，例如：
+
 ```typescript
 // 项目1
 console.warn('[System:MatrixClient:getAuthedClient] 尚未登录或客户端未初始化')
 
 // 项目2
-logWarn("MatrixClient", "", "[System:MatrixClient:getAuthedClient] 尚未登录或客户端未初始化")
+logWarn(
+  'MatrixClient',
+  '',
+  '[System:MatrixClient:getAuthedClient] 尚未登录或客户端未初始化',
+)
 ```
 
 #### 2.1.2 多账号支持（架构级差异）
@@ -82,12 +88,16 @@ await SystemStorageManager.getMatrixAccessToken()
 await SystemStorageManager.setLoginToken(LoginToken)
 
 // 项目2 —— 按账号隔离
-await SystemStorageManager.setMatrixAccessToken(LoginConfig.username, data.access_token)
+await SystemStorageManager.setMatrixAccessToken(
+  LoginConfig.username,
+  data.access_token,
+)
 await SystemStorageManager.getMatrixAccessToken(activeUsername)
 await SystemStorageManager.setLoginToken(LoginConfig.username, LoginToken)
 ```
 
 项目2新增了 `getActiveUsername()` 私有方法：
+
 ```typescript
 // 项目2独有
 private async getActiveUsername(): Promise<string> {
@@ -103,15 +113,17 @@ private async getActiveUsername(): Promise<string> {
 
 ```typescript
 // 项目2独有
-import { failTiming, finishTiming, startTiming } from "@/utils/startupTiming";
+import { failTiming, finishTiming, startTiming } from '@/utils/startupTiming'
 
 // 在 useAccessTokenLogin、validateAccessToken、autoLogin、
 // ensureValidMatrixAccessToken 中均有打点
-const _uatl = startTiming("MatrixClient", "useAccessTokenLogin", "total");
+const _uatl = startTiming('MatrixClient', 'useAccessTokenLogin', 'total')
 // ... 业务逻辑 ...
-finishTiming("MatrixClient", "useAccessTokenLogin", "total", _uatl, { actualUserId });
+finishTiming('MatrixClient', 'useAccessTokenLogin', 'total', _uatl, {
+  actualUserId,
+})
 // 或失败时
-failTiming("MatrixClient", "useAccessTokenLogin", "total", _uatl, error);
+failTiming('MatrixClient', 'useAccessTokenLogin', 'total', _uatl, error)
 ```
 
 #### 2.1.4 useAccessTokenLogin 签名变化
@@ -139,10 +151,10 @@ async useAccessTokenLogin(
 
 #### 2.1.5 startClient 调用时机分离（关键架构变更）
 
-| 方面 | 项目1 | 项目2 |
-|------|-------|-------|
-| startClient 调用位置 | `useAccessTokenLogin` 方法内直接调用 | **不在** `useAccessTokenLogin` 中调用 |
-| 调用时机 | 登录完成后立即启动 /sync | 由 `projectStart.ts` 在本地数据恢复完成后调用 `startSyncIfNeeded()` |
+| 方面                 | 项目1                                | 项目2                                                               |
+| -------------------- | ------------------------------------ | ------------------------------------------------------------------- |
+| startClient 调用位置 | `useAccessTokenLogin` 方法内直接调用 | **不在** `useAccessTokenLogin` 中调用                               |
+| 调用时机             | 登录完成后立即启动 /sync             | 由 `projectStart.ts` 在本地数据恢复完成后调用 `startSyncIfNeeded()` |
 
 ```typescript
 // 项目1 —— useAccessTokenLogin 内直接 startClient
@@ -172,10 +184,10 @@ startSyncIfNeeded(): void {
 
 ```typescript
 // 项目2独有 —— autoLogin 开头新增的守卫
-const activeUsername = await SystemStorageManager.getActiveUsername();
+const activeUsername = await SystemStorageManager.getActiveUsername()
 if (!activeUsername) {
   // 项目1 没有这个早退；项目2 找不到激活用户直接返回 null
-  return null;
+  return null
 }
 ```
 
@@ -202,12 +214,17 @@ autoLogin()
 
 ```typescript
 // 项目1 —— 无用户参数
-const token = client.getAccessToken?.() || await SystemStorageManager.getMatrixAccessToken()
+const token =
+  client.getAccessToken?.() ||
+  (await SystemStorageManager.getMatrixAccessToken())
 
 // 项目2 —— 按当前激活用户读取
-const activeSessionUser = await SystemStorageManager.getActiveUsername();
-const token = client.getAccessToken?.() ||
-  (activeSessionUser ? await SystemStorageManager.getMatrixAccessToken(activeSessionUser) : null);
+const activeSessionUser = await SystemStorageManager.getActiveUsername()
+const token =
+  client.getAccessToken?.() ||
+  (activeSessionUser
+    ? await SystemStorageManager.getMatrixAccessToken(activeSessionUser)
+    : null)
 ```
 
 #### 2.1.8 ensureValidMatrixAccessToken —— 三项遗漏变更
@@ -218,10 +235,10 @@ const token = client.getAccessToken?.() ||
 
 ```typescript
 // 项目2独有
-const activeUsername = await SystemStorageManager.getActiveUsername();
+const activeUsername = await SystemStorageManager.getActiveUsername()
 if (!activeUsername) {
-  logWarn("MatrixClient", "", "...缺少激活账号用户名");
-  return null;
+  logWarn('MatrixClient', '', '...缺少激活账号用户名')
+  return null
 }
 ```
 
@@ -229,25 +246,32 @@ if (!activeUsername) {
 
 ```typescript
 // 项目1
-const currentToken = await SystemStorageManager.getMatrixAccessToken() || null;
-const loginToken = await SystemStorageManager.getLoginToken() || null;
-await SystemStorageManager.setMatrixAccessToken(freshToken);
+const currentToken = (await SystemStorageManager.getMatrixAccessToken()) || null
+const loginToken = (await SystemStorageManager.getLoginToken()) || null
+await SystemStorageManager.setMatrixAccessToken(freshToken)
 
 // 项目2
-const currentToken = await SystemStorageManager.getMatrixAccessToken(activeUsername) || null;
-const loginToken = await SystemStorageManager.getLoginToken(activeUsername) || null;
-await SystemStorageManager.setMatrixAccessToken(activeUsername, freshToken);
+const currentToken =
+  (await SystemStorageManager.getMatrixAccessToken(activeUsername)) || null
+const loginToken =
+  (await SystemStorageManager.getLoginToken(activeUsername)) || null
+await SystemStorageManager.setMatrixAccessToken(activeUsername, freshToken)
 ```
 
 **③ 失败路径增加 failTiming**
 
 ```typescript
 // 项目2独有 —— 整个函数最外层增加了失败打点
-const result = await this.ensureValidTokenInflight;
+const result = await this.ensureValidTokenInflight
 if (!result)
-  failTiming("MatrixClient", "ensureValidMatrixAccessToken", "total", _evt,
-    new Error("refresh failed"));
-return result;
+  failTiming(
+    'MatrixClient',
+    'ensureValidMatrixAccessToken',
+    'total',
+    _evt,
+    new Error('refresh failed'),
+  )
+return result
 ```
 
 #### 2.1.9 性能打点覆盖的具体方法和分支标签
@@ -272,8 +296,8 @@ autoLogin 打点分支：
 const config = await SystemStorageManager.getMatrixLoginConfig()
 
 // 项目2 —— 按当前激活用户读取
-const activeUsername = await SystemStorageManager.getActiveUsername();
-const config = await SystemStorageManager.getMatrixLoginConfig(activeUsername);
+const activeUsername = await SystemStorageManager.getActiveUsername()
+const config = await SystemStorageManager.getMatrixLoginConfig(activeUsername)
 ```
 
 ---
@@ -310,42 +334,42 @@ type SendCompositeOptions = {
 
 不仅是 `sendText`，以下三个方法在项目2中都新增了 `format` + `formatted_body`：
 
-| 方法 | 项目1 | 项目2 |
-|------|-------|-------|
-| `sendText` | 纯文本 | `format: "org.matrix.custom.html"` + `formatted_body` |
-| `editText` | 纯文本 | `format: "org.matrix.custom.html"` + `formatted_body` |
-| `sendTextWithMentions` | 纯文本 | `format: "org.matrix.custom.html"` + `formatted_body` |
+| 方法                              | 项目1               | 项目2                                                                                           |
+| --------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------- |
+| `sendText`                        | 纯文本              | `format: "org.matrix.custom.html"` + `formatted_body`                                           |
+| `editText`                        | 纯文本              | `format: "org.matrix.custom.html"` + `formatted_body`                                           |
+| `sendTextWithMentions`            | 纯文本              | `format: "org.matrix.custom.html"` + `formatted_body`                                           |
 | `sendCompositeMessage` (text部分) | 仅 `msgtype + body` | `format` + `formatted_body`，且支持 `mentions` 分支选择 `buildMentionHtml` 还是 `buildRichHtml` |
 
 ```typescript
 // 项目2 —— sendCompositeMessage 中 text 片段的构建逻辑
 const textContent = text
   ? {
-      msgtype: "m.text",
+      msgtype: 'm.text',
       body: text,
-      format: "org.matrix.custom.html",
+      format: 'org.matrix.custom.html',
       formatted_body:
         options?.htmlBody ||
         (options?.mentions?.length
           ? this.buildMentionHtml(text, options.mentions)
           : this.buildRichHtml(text)),
       ...(options?.mentions?.length
-        ? { "m.mentions": { user_ids: options.mentions.map((m) => m.userId) } }
+        ? { 'm.mentions': { user_ids: options.mentions.map((m) => m.userId) } }
         : {}),
       ...baseExtra,
-      "com.yanjing.bundle_index": textIndex,
+      'com.yanjing.bundle_index': textIndex,
     }
-  : null;
+  : null
 ```
 
 #### 2.2.3 新增HTML构建方法（项目2独有）
 
-| 方法 | 功能 |
-|------|------|
-| `escapeHtml(text)` | 转义 `& < > " '` 为 HTML 实体 |
-| `buildRichHtml(text)` | 转义后把 `\n` 替换为 `<br />` |
+| 方法                               | 功能                                      |
+| ---------------------------------- | ----------------------------------------- |
+| `escapeHtml(text)`                 | 转义 `& < > " '` 为 HTML 实体             |
+| `buildRichHtml(text)`              | 转义后把 `\n` 替换为 `<br />`             |
 | `buildMentionHtml(text, mentions)` | 把 `@displayName` 替换为 `matrix.to` 链接 |
-| `escapeRegExp(text)` | 转义正则特殊字符 |
+| `escapeRegExp(text)`               | 转义正则特殊字符                          |
 
 #### 2.2.4 消息指纹缓存（项目2独有）
 
@@ -353,14 +377,15 @@ const textContent = text
 
 ```typescript
 // 项目2独有 —— 指纹对比，无变化则跳过 store 写入
-const cached = store.messageFingerprints.get(roomId);
+const cached = store.messageFingerprints.get(roomId)
 const fingerprint =
-  items.map((m) => m.id).join(",") + "|" +
-  items.reduce((s, m) => s + m.content.length, 0);
+  items.map((m) => m.id).join(',') +
+  '|' +
+  items.reduce((s, m) => s + m.content.length, 0)
 
-if (cached === fingerprint) return items;
+if (cached === fingerprint) return items
 
-store.setRoomMessages(roomId, items);
+store.setRoomMessages(roomId, items)
 ```
 
 #### 2.2.5 turnId 字段被移除（行为变更）
@@ -369,9 +394,9 @@ store.setRoomMessages(roomId, items);
 
 ```typescript
 // 项目1 —— 提取 turnId 并写入消息对象
-const turnId = (content as { 'm.relates_to'?: Record<string, unknown> })?.['m.relates_to']?.['io.shayu.turn_id'] as
-  | string
-  | undefined
+const turnId = (content as { 'm.relates_to'?: Record<string, unknown> })?.[
+  'm.relates_to'
+]?.['io.shayu.turn_id'] as string | undefined
 
 return {
   // ...
@@ -442,14 +467,14 @@ getPreview(room): string {
 
 这并非仅仅是 `getOriginalRooms` "增加了日志输出"，而是 **room.ts 全类所有方法** 的日志从 `console` 迁移到了 `logInfo`/`logWarn`。以下方法全部做了替换（项目1均为 `console.warn`，项目2均为 `logWarn("room", "", ...)`）：
 
-| 方法 | 项目1 | 项目2 |
-|------|-------|-------|
-| `getOriginalRooms` | `console.warn(...)` | `logWarn("room", "", ...)` + 新增 `logInfo` 输出房间列表 |
-| `isSpaceRoom` | `console.warn(...)` | `logWarn("room", "", ...)` |
-| `isDirectRoom` | `console.warn(...)` | `logWarn("room", "", ...)` |
-| `getAllRoomMembers` | `console.warn(...)` | `logWarn("room", "", ...)` |
-| `getRoomMembers` | `console.warn(...)` | `logWarn("room", "", ...)` |
-| `getRoomMembersById` | `console.warn(...)` | `logWarn("room", "", ...)` |
+| 方法                 | 项目1               | 项目2                                                    |
+| -------------------- | ------------------- | -------------------------------------------------------- |
+| `getOriginalRooms`   | `console.warn(...)` | `logWarn("room", "", ...)` + 新增 `logInfo` 输出房间列表 |
+| `isSpaceRoom`        | `console.warn(...)` | `logWarn("room", "", ...)`                               |
+| `isDirectRoom`       | `console.warn(...)` | `logWarn("room", "", ...)`                               |
+| `getAllRoomMembers`  | `console.warn(...)` | `logWarn("room", "", ...)`                               |
+| `getRoomMembers`     | `console.warn(...)` | `logWarn("room", "", ...)`                               |
+| `getRoomMembersById` | `console.warn(...)` | `logWarn("room", "", ...)`                               |
 
 此外 `isDirectRoom` 中注释掉的日志代码也同步从 `console.log` 改为了 `logInfo`。
 
@@ -458,6 +483,7 @@ getPreview(room): string {
 ### 2.4 roomManagement.ts —— 日志迁移（无逻辑差异）
 
 404行 vs 554行（差150行），差异全部来自：
+
 - 全文件 `console.log` → `logInfo("roomManagement", "", ...)`
 - `console.warn` → `logWarn("roomManagement", "", ...)`
 - 代码格式化（缩进、引号）
@@ -488,12 +514,13 @@ export type MentionPayload = {
 ```typescript
 // 项目2独有
 export function buildMentionPayload(message: string): MentionPayload {
-  const mentionRegex = /@\[(.*?)\]\((.*?)\)/g;
+  const mentionRegex = /@\[(.*?)\]\((.*?)\)/g
   // 同时生成 plainText 和 htmlText 两个版本
 }
 ```
 
 正则解析 `@[name](id)` 后：
+
 - `plainText`: `@displayName` 格式的纯文本
 - `htmlText`: `<a href="https://matrix.to/#/userId">@displayName</a>` 格式的HTML
 - `mentions`: 去重后的提及用户列表
@@ -541,10 +568,19 @@ export function buildMentionPayload(message: string): MentionPayload {
 
 ```typescript
 // 项目1 —— event 和 error 作为两个独立参数传入
-console.warn('[System:MatrixEventManager:tryParseExtensible] 解析事件失败', event, error)
+console.warn(
+  '[System:MatrixEventManager:tryParseExtensible] 解析事件失败',
+  event,
+  error,
+)
 
 // 项目2 —— event 和 error 被包裹成一个数组
-logWarn("eventManager", "", "[System:MatrixEventManager:tryParseExtensible] 解析事件失败", [event, error])
+logWarn(
+  'eventManager',
+  '',
+  '[System:MatrixEventManager:tryParseExtensible] 解析事件失败',
+  [event, error],
+)
 ```
 
 这不是纯格式化。`console.warn` 接收多个独立参数时，浏览器 DevTools 可以分别展开每个对象。而 `[event, error]` 包裹成数组后，`logWarn` 如果内部做 `JSON.stringify` 序列化，`event`（一个 MatrixEvent 实例）可能产出完全不同的输出（如 `{}` 或循环引用错误），而 `console.warn` 则直接渲染可交互的对象树。
@@ -580,37 +616,41 @@ Step D: unknown成员回退 → kind 降级为 'user'
 ```
 
 **输出结构 RoomClassDisplayRow**：
+
 ```typescript
 interface RoomClassDisplayRow {
   roomId: string
-  kind: "system" | "user" | "bot"
-  subKind: "self" | "private1v1" | "group" | null
-  systemTag: "AIAdmin" | "AISupport" | "ServerNotice" | null
+  kind: 'system' | 'user' | 'bot'
+  subKind: 'self' | 'private1v1' | 'group' | null
+  systemTag: 'AIAdmin' | 'AISupport' | 'ServerNotice' | null
   targetUserId: string | null
   targetUsername: string | null
-  displayName: string         // 外显名
-  displayAvatarMxc: string | null  // 头像mxc
-  memberSignature: string | null   // 成员签名（用于增量判重）
+  displayName: string // 外显名
+  displayAvatarMxc: string | null // 头像mxc
+  memberSignature: string | null // 成员签名（用于增量判重）
   // ...
 }
 ```
 
 **外显名四级回退规则**：
+
 - user/group → room.name → "群聊"
 - user/private1v1 & self → 目标对象nickname → room.name → ""
 - bot/任意 → room.name → room.topic → target.nickname → "任务"
 
 **导出函数**：
-| 函数 | 用途 |
-|------|------|
-| `classifyOneRoom(roomId, context?)` | 分类单个房间 |
-| `classifyAllRooms(context?)` | 遍历所有房间全量分类（并发） |
-| `classifyRooms(roomIds, context?)` | 批量分类指定房间列表 |
-| `loadDMRoomIndex()` | 加载DM房间索引 |
+
+| 函数                                | 用途                         |
+| ----------------------------------- | ---------------------------- |
+| `classifyOneRoom(roomId, context?)` | 分类单个房间                 |
+| `classifyAllRooms(context?)`        | 遍历所有房间全量分类（并发） |
+| `classifyRooms(roomIds, context?)`  | 批量分类指定房间列表         |
+| `loadDMRoomIndex()`                 | 加载DM房间索引               |
 
 #### 3.1.2 displayResolver.ts —— 外显视图解析
 
 把 `RoomClassDisplayRow` 转换为 UI 可直接使用的 `RoomDisplayView`：
+
 - 头像本地化：mxc → 本地文件路径（依赖 `matrixAvatar` 工具）
 - 占位类型判定：`avatar` / `groupGlyph` / `systemGlyph` / `defaultAvatar`
 - 兜底文案："未命名会话"
@@ -618,6 +658,7 @@ interface RoomClassDisplayRow {
 #### 3.1.3 memberTypeResolver.ts —— 成员类型解析
 
 判定 Matrix 成员是 user 还是 bot：
+
 - 输入：Matrix ID（`@u:server`）或 localpart（`u`）
 - 数据源：`GetIMUserInfoPreferLocal` → `GetIMUserInfo`（两级兜底）
 - 并发去重：同一次分类周期内同一用户只请求一次
@@ -626,11 +667,13 @@ interface RoomClassDisplayRow {
 #### 3.1.4 systemRoomRules.ts —— 系统房间判定
 
 识别3种系统房间：
+
 - **AIAdmin**：从 `specialRoomStore.config.AIAdminByOrg` 反查（有 appId）或 `AIAdmin` 列表命中（无 appId）
 - **AISupport**：从 `specialRoomStore.config.AISupport` 列表命中
 - **ServerNotice**：通过 `room.tags["m.server_notice"]` 检测
 
 外显文案：
+
 - AIAdmin → `{组织名}组织助手`
 - AISupport → `客服小研`
 - ServerNotice → `系统通知`
@@ -651,9 +694,9 @@ interface RoomClassDisplayRow {
 
 项目1 和项目2 都有 `eventManager.ts`，两者对 ROOM_JOINED/ROOM_INVITED/ROOM_UPDATED 这些事件的**底层产生机制完全相同**（都是 `handleSync`、`handleTimeline`、`handleMyMembership` 等 SDK 事件回调触发）。区别在于**消费侧**：
 
-| 事件 | 项目1的消费者 | 项目2的消费者 |
-|------|-------------|-------------|
-| `ROOM_JOINED` | `timeline.ts` (更新时间线store) | `timeline.ts` + **`incrementalClassify.ts` (触发重分类)** |
+| 事件           | 项目1的消费者                   | 项目2的消费者                                             |
+| -------------- | ------------------------------- | --------------------------------------------------------- |
+| `ROOM_JOINED`  | `timeline.ts` (更新时间线store) | `timeline.ts` + **`incrementalClassify.ts` (触发重分类)** |
 | `ROOM_INVITED` | `timeline.ts` (更新时间线store) | `timeline.ts` + **`incrementalClassify.ts` (触发重分类)** |
 | `ROOM_UPDATED` | `timeline.ts` (更新时间线store) | `timeline.ts` + **`incrementalClassify.ts` (触发重分类)** |
 
@@ -666,6 +709,7 @@ interface RoomClassDisplayRow {
 ### 3.3 serverNotice.ts —— 服务器通知房间
 
 功能：
+
 - `findServerNoticeRoom()`：遍历所有房间，查找 `tags["m.server_notice"]` 标记的房间
 - `inspectServerNoticeRoom()`：完整 dump 房间信息（成员、状态事件、时间线、账号数据、tags）
 - 用于调试 Synapse `server_notices` 配置
@@ -683,6 +727,7 @@ interface RoomClassDisplayRow {
 - `findParentSpaceByChildRoomId(roomId)`: 遍历所有 Space 的 m.space.child 反向查找
 
 返回的 `SpaceInfo` 包含：
+
 - 基础信息：name, topic, avatarUrl, membership, isJoined
 - 成员统计：joinedMemberCount, totalMemberCount
 - 子房间：childRoomCount, childRoomIds
@@ -714,19 +759,19 @@ interface RoomClassDisplayRow {
 
 ### 5.1 文件差异
 
-| 项目1有、项目2无 | 项目2有、项目1无 |
-|-----------------|-----------------|
-| `Project/Approval/data.ts` | `Project/Ensure/Secretary.ts` |
-| `Project/CC/AIEmployee.ts` | |
-| `Project/Ensure/Ensure.ts` | |
-| `Project/Ensure/EnsureDirectRoom copy.ts`（副本文件） | |
-| `Project/KnowledgeBase/mockService.ts` | |
-| `Project/Organization/adapter.ts` | |
-| `Project/SystemNotification.ts` | |
-| `Project/UserBot/AuthorizeUserBot.ts` | |
-| `SocketIO/1.json` | |
-| `services/1.json` 等根级JSON文件 | |
-| `services/ProjectStart.ts`（大写P） | `services/projectStart.ts`（小写p） |
+| 项目1有、项目2无                                      | 项目2有、项目1无                    |
+| ----------------------------------------------------- | ----------------------------------- |
+| `Project/Approval/data.ts`                            | `Project/Ensure/Secretary.ts`       |
+| `Project/CC/AIEmployee.ts`                            |                                     |
+| `Project/Ensure/Ensure.ts`                            |                                     |
+| `Project/Ensure/EnsureDirectRoom copy.ts`（副本文件） |                                     |
+| `Project/KnowledgeBase/mockService.ts`                |                                     |
+| `Project/Organization/adapter.ts`                     |                                     |
+| `Project/SystemNotification.ts`                       |                                     |
+| `Project/UserBot/AuthorizeUserBot.ts`                 |                                     |
+| `SocketIO/1.json`                                     |                                     |
+| `services/1.json` 等根级JSON文件                      |                                     |
+| `services/ProjectStart.ts`（大写P）                   | `services/projectStart.ts`（小写p） |
 
 ---
 
@@ -734,19 +779,19 @@ interface RoomClassDisplayRow {
 
 ### 6.1 项目2相比项目1的核心演进
 
-| 维度 | 项目1 | 项目2 |
-|------|-------|-------|
-| **账号体系** | 单账号 | 多账号（所有存储按 username 隔离） |
-| **日志系统** | console 直接输出 | 结构化日志（模块+子分类+数据） |
-| **性能监控** | 无 | startupTiming 全链路打点 |
-| **房间分类** | 无分类系统 | 完整的三分类+增量体系 |
-| **消息格式** | 纯文本 | HTML富文本（格式化+@提及链接） |
-| **未读计数** | 本地 store 维护 | SDK notification count |
-| **/sync启动** | 登录后立即启动 | 延迟到本地数据恢复后（避免竞争） |
-| **消息预览** | 去除HTML标签 | 保留HTML（因为自身发HTML） |
-| **转发功能** | 合集+逐条 | 仅合集转发 |
-| **Space空间** | 完整空间反查 | 无（未使用space功能） |
-| **Server Notice** | 无 | 完整检测+dump |
+| 维度              | 项目1            | 项目2                              |
+| ----------------- | ---------------- | ---------------------------------- |
+| **账号体系**      | 单账号           | 多账号（所有存储按 username 隔离） |
+| **日志系统**      | console 直接输出 | 结构化日志（模块+子分类+数据）     |
+| **性能监控**      | 无               | startupTiming 全链路打点           |
+| **房间分类**      | 无分类系统       | 完整的三分类+增量体系              |
+| **消息格式**      | 纯文本           | HTML富文本（格式化+@提及链接）     |
+| **未读计数**      | 本地 store 维护  | SDK notification count             |
+| **/sync启动**     | 登录后立即启动   | 延迟到本地数据恢复后（避免竞争）   |
+| **消息预览**      | 去除HTML标签     | 保留HTML（因为自身发HTML）         |
+| **转发功能**      | 合集+逐条        | 仅合集转发                         |
+| **Space空间**     | 完整空间反查     | 无（未使用space功能）              |
+| **Server Notice** | 无               | 完整检测+dump                      |
 
 ### 6.2 核心差异原因推测
 

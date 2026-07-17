@@ -1,44 +1,43 @@
 import js from '@eslint/js'
-import globals from 'globals'
 import pluginVue from 'eslint-plugin-vue'
-import eslintConfigPrettier from 'eslint-config-prettier'
 import tseslint from 'typescript-eslint'
-import vueParser from 'vue-eslint-parser'
+import globals from 'globals'
+import eslintConfigPrettier from 'eslint-config-prettier'
 
 export default tseslint.config(
+  { ignores: ['dist', 'src-tauri/target', 'node_modules'] },
   {
-    ignores: ['dist', 'src-tauri/target', 'node_modules'],
-  },
-  js.configs.recommended,
-  ...tseslint.configs.recommended,
-  ...pluginVue.configs['flat/recommended'],
-  {
-    files: ['**/*.d.ts'],
+    extends: [
+      js.configs.recommended,
+      ...tseslint.configs.recommended,
+      ...pluginVue.configs['flat/essential'],
+    ],
+    files: ['**/*.{ts,tsx,vue}'],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.browser,
+      parserOptions: {
+        parser: tseslint.parser,
+      },
+    },
     rules: {
-      '@typescript-eslint/no-empty-object-type': 'off',
+      'vue/multi-word-component-names': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-empty-object-type': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
     },
   },
   {
     files: ['scripts/**/*.js'],
     languageOptions: {
       globals: globals.node,
-    },
-  },
-  {
-    files: ['**/*.{ts,tsx,vue}'],
-    languageOptions: {
-      parser: vueParser,
-      parserOptions: {
-        parser: tseslint.parser,
-        ecmaVersion: 'latest',
-        sourceType: 'module',
-        extraFileExtensions: ['.vue'],
-      },
-      globals: globals.browser,
-    },
-    rules: {
-      'vue/multi-word-component-names': 'off',
     },
   },
   eslintConfigPrettier,

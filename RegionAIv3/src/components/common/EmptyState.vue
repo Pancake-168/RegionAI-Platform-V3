@@ -35,7 +35,10 @@ defineProps<{
     >
       {{ title }}
     </span>
-    <span v-if="description" :style="{ color: 'var(--muted)', fontSize: 'var(--text-sm)' }">
+    <span
+      v-if="description"
+      :style="{ color: 'var(--muted)', fontSize: 'var(--text-sm)' }"
+    >
       {{ description }}
     </span>
     <div v-if="$slots.action" :style="{ marginTop: 'var(--spacing-sm)' }">

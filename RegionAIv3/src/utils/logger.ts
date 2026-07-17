@@ -215,9 +215,7 @@ export const registerTauriTransport = () => {
       file_name: payload.fileName,
       function_name: payload.functionName,
       message: payload.message,
-      details: payload.details
-        ? payload.details.map(stringifyLogDetail)
-        : null,
+      details: payload.details ? payload.details.map(stringifyLogDetail) : null,
     }
     invoke('write_log', { entry }).catch((e) => {
       console.error('[logger] invoke write_log 失败:', e)
@@ -240,11 +238,10 @@ export const registerGlobalErrorHandlers = () => {
 
   /* 运行时存在性检查：globalThis 类型断言仅用于检测 addEventListener 是否存在，
      实际事件监听器在下方各自持有正确的 ErrorEvent / PromiseRejectionEvent 类型。 */
-  /* eslint-disable @typescript-eslint/no-explicit-any */
+
   const runtime = globalThis as {
     addEventListener?: (type: string, listener: (event: any) => void) => void
   }
-  /* eslint-enable @typescript-eslint/no-explicit-any */
 
   if (typeof runtime.addEventListener !== 'function') return
 

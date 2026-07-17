@@ -29,7 +29,9 @@ const textareaId = useId()
 
 <template>
   <div :class="styles.wrapper">
-    <label v-if="label" :class="styles.label" :for="textareaId">{{ label }}</label>
+    <label v-if="label" :class="styles.label" :for="textareaId">{{
+      label
+    }}</label>
     <textarea
       :id="textareaId"
       v-bind="$attrs"
@@ -38,7 +40,9 @@ const textareaId = useId()
       :disabled="disabled"
       :rows="rows"
       :maxlength="maxLength"
-      @input="emit('update:modelValue', ($event.target as HTMLTextAreaElement).value)"
+      @input="
+        emit('update:modelValue', ($event.target as HTMLTextAreaElement).value)
+      "
     />
     <span v-if="error" :class="styles.errorText">{{ error }}</span>
     <span v-else-if="helper" :class="styles.helper">{{ helper }}</span>

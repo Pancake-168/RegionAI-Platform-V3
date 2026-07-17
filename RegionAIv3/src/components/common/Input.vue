@@ -36,7 +36,9 @@ const inputId = useId()
       :class="[styles.field, { [styles.hasError]: error }]"
       :value="modelValue"
       :disabled="disabled"
-      @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
+      @input="
+        emit('update:modelValue', ($event.target as HTMLInputElement).value)
+      "
     />
     <span v-if="error" :class="styles.errorText">{{ error }}</span>
     <span v-else-if="helper" :class="styles.helper">{{ helper }}</span>

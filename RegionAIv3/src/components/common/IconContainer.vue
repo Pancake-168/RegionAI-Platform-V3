@@ -18,7 +18,9 @@ const props = withDefaults(
 
 const imgError = ref(false)
 
-const shapeClass = computed(() => (props.shape === 'circle' ? styles.circle : styles.rounded))
+const shapeClass = computed(() =>
+  props.shape === 'circle' ? styles.circle : styles.rounded,
+)
 
 const containerStyle = computed(() => ({
   width: `${props.size}px`,
@@ -28,20 +30,31 @@ const containerStyle = computed(() => ({
 }))
 
 const fallbackSize = computed(() => Math.round(props.size * 0.45))
-
 </script>
 
 <template>
   <!-- Image mode: src is a string URL -->
-  <div v-if="src && !imgError" :class="[styles.container, shapeClass]" :style="containerStyle">
+  <div
+    v-if="src && !imgError"
+    :class="[styles.container, shapeClass]"
+    :style="containerStyle"
+  >
     <img :class="styles.image" :src="src" :alt="alt" @error="imgError = true" />
   </div>
 
   <!-- Error fallback for image mode -->
-  <div v-else-if="src && imgError" :class="[styles.container, shapeClass]" :style="containerStyle">
+  <div
+    v-else-if="src && imgError"
+    :class="[styles.container, shapeClass]"
+    :style="containerStyle"
+  >
     <slot name="fallback">
       <div :class="styles.fallback">
-        <Icon icon="codicon:question" :width="fallbackSize" :height="fallbackSize" />
+        <Icon
+          icon="codicon:question"
+          :width="fallbackSize"
+          :height="fallbackSize"
+        />
       </div>
     </slot>
   </div>

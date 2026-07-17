@@ -22,12 +22,26 @@ const variantClass = computed(() => {
 })
 
 const baseStyle = computed(() => ({
-  width: resolveSize(props.width, props.variant === 'circle' ? props.height || 32 : '100%'),
-  height: resolveSize(props.height, props.variant === 'circle' ? props.width || 32 : props.variant === 'rect' ? 60 : 14),
+  width: resolveSize(
+    props.width,
+    props.variant === 'circle' ? props.height || 32 : '100%',
+  ),
+  height: resolveSize(
+    props.height,
+    props.variant === 'circle'
+      ? props.width || 32
+      : props.variant === 'rect'
+        ? 60
+        : 14,
+  ),
 }))
 
-function resolveSize(value: number | string | undefined, fallback: number | string): string {
-  if (value !== undefined) return typeof value === 'number' ? `${value}px` : value
+function resolveSize(
+  value: number | string | undefined,
+  fallback: number | string,
+): string {
+  if (value !== undefined)
+    return typeof value === 'number' ? `${value}px` : value
   return typeof fallback === 'number' ? `${fallback}px` : fallback
 }
 </script>

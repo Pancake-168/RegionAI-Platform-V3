@@ -43,7 +43,12 @@ function handleConfirm() {
 </script>
 
 <template>
-  <Dialog :open="open" :title="title" :description="description" @update:open="$emit('update:open', $event)">
+  <Dialog
+    :open="open"
+    :title="title"
+    :description="description"
+    @update:open="$emit('update:open', $event)"
+  >
     <slot />
     <div :class="styles.footer">
       <div :class="styles.footerLeft">
@@ -59,7 +64,10 @@ function handleConfirm() {
       <Button variant="subtle" @click="handleCancel">
         {{ cancelLabel }}
       </Button>
-      <Button :variant="variant === 'danger' ? 'danger' : 'primary'" @click="handleConfirm">
+      <Button
+        :variant="variant === 'danger' ? 'danger' : 'primary'"
+        @click="handleConfirm"
+      >
         {{ confirmLabel }}
       </Button>
     </div>

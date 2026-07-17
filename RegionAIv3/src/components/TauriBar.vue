@@ -20,7 +20,9 @@ let unlistenResize: (() => void) | undefined
 
 const isHome = computed(() => route.path === '/')
 const themeIcon = computed(() =>
-  theme.value === 'dark' ? 'material-symbols:light-mode' : 'material-symbols:dark-mode',
+  theme.value === 'dark'
+    ? 'material-symbols:light-mode'
+    : 'material-symbols:dark-mode',
 )
 
 onMounted(async () => {
@@ -59,16 +61,32 @@ function close() {
       <span :class="styles.title">RegionAI</span>
     </span>
     <span :class="styles.spacer" />
-    <button v-if="!isHome" :class="styles.btn" title="切换主题" @click="toggleTheme">
+    <button
+      v-if="!isHome"
+      :class="styles.btn"
+      title="切换主题"
+      @click="toggleTheme"
+    >
       <Icon :icon="themeIcon" :width="16" />
     </button>
     <button :class="styles.btn" title="最小化" @mousedown.prevent="minimize">
       <Icon icon="codicon:chrome-minimize" :width="14" />
     </button>
-    <button :class="styles.btn" title="最大化" @mousedown.prevent="toggleMaximize">
-      <Icon :icon="maximized ? 'codicon:chrome-restore' : 'codicon:chrome-maximize'" :width="14" />
+    <button
+      :class="styles.btn"
+      title="最大化"
+      @mousedown.prevent="toggleMaximize"
+    >
+      <Icon
+        :icon="maximized ? 'codicon:chrome-restore' : 'codicon:chrome-maximize'"
+        :width="14"
+      />
     </button>
-    <button :class="[styles.btn, styles.btnClose]" title="关闭" @mousedown.prevent="close">
+    <button
+      :class="[styles.btn, styles.btnClose]"
+      title="关闭"
+      @mousedown.prevent="close"
+    >
       <Icon icon="codicon:chrome-close" :width="14" />
     </button>
   </header>

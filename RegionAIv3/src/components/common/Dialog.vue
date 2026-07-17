@@ -47,7 +47,11 @@ const rootBindings = computed(() => {
           <button
             class="icon-btn"
             aria-label="关闭"
-            :style="{ position: 'absolute', top: 'var(--spacing-lg)', right: 'var(--spacing-lg)' }"
+            :style="{
+              position: 'absolute',
+              top: 'var(--spacing-lg)',
+              right: 'var(--spacing-lg)',
+            }"
           >
             <Icon icon="codicon:close" :width="16" />
           </button>

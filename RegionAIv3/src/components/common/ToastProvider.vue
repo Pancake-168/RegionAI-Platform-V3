@@ -16,14 +16,28 @@ const { toasts, removeToast } = useToastViewport()
         :key="t.id"
         :class="styles.root"
         :duration="t.duration"
-        @update:open="(open: boolean) => { if (!open) removeToast(t.id) }"
+        @update:open="
+          (open: boolean) => {
+            if (!open) removeToast(t.id)
+          }
+        "
       >
         <div
           :class="['pill', t.variant ?? 'info']"
-          :style="{ width: '8px', height: '8px', padding: '0', minWidth: '8px', borderRadius: '50%' }"
+          :style="{
+            width: '8px',
+            height: '8px',
+            padding: '0',
+            minWidth: '8px',
+            borderRadius: '50%',
+          }"
         />
         <span :class="styles.message">{{ t.message }}</span>
-        <button v-if="t.action" :class="styles.action" @click="t.action.onClick">
+        <button
+          v-if="t.action"
+          :class="styles.action"
+          @click="t.action.onClick"
+        >
           {{ t.action.label }}
         </button>
         <ToastClose :class="styles.close" aria-label="关闭">

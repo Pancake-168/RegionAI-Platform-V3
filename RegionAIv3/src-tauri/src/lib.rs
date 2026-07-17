@@ -4,6 +4,9 @@ use std::path::PathBuf;
 use chrono::Local;
 use tauri::Manager;
 
+// 局域网 TCP 指纹扫描模块
+mod discover;
+
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -179,7 +182,7 @@ pub fn run() {
             window_builder.build().expect("failed to build window");
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![greet, write_log, get_device_info])
+        .invoke_handler(tauri::generate_handler![greet, write_log, get_device_info, discover::discover_server])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|_app_handle, _event| {});

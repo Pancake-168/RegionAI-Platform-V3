@@ -32,6 +32,9 @@
   /* ---- 边框 ---- */
   --border: rgba(255, 255, 255, 0.08);
 
+  /* ---- 表格 ---- */
+  --table-stripe: rgba(255, 255, 255, 0.02);
+
   /* ---- 阴影 ---- */
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
   --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.3);
@@ -54,7 +57,8 @@
 
   /* ---- 字体 ---- */
   --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-heading: '优设标题黑', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-heading:
+    '优设标题黑', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
 
   /* ---- 字号 ---- */
@@ -69,7 +73,8 @@
   --nav-height: 36px;
 
   /* ---- 过渡 ---- */
-  --transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+  --transition:
+    color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
 
   /* ---- 输入控件 ---- */
   --input-bg: rgba(255, 255, 255, 0.04);
@@ -114,6 +119,7 @@
   --color-error-rgb: 217, 79, 86;
 
   --border: rgba(0, 0, 0, 0.08);
+  --table-stripe: rgba(0, 0, 0, 0.02);
 
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
   --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.08);

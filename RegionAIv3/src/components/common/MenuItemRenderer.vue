@@ -11,7 +11,11 @@ defineProps<{
 </script>
 
 <template>
-  <component :is="menuSeparator" v-if="item.separator" :class="styles.separator" />
+  <component
+    :is="menuSeparator"
+    v-if="item.separator"
+    :class="styles.separator"
+  />
   <component
     :is="menuItem"
     v-else
@@ -21,6 +25,8 @@ defineProps<{
   >
     <component :is="item.icon" v-if="item.icon" />
     <span :class="styles.itemLabel">{{ item.label }}</span>
-    <span v-if="item.shortcut" :class="styles.shortcut">{{ item.shortcut }}</span>
+    <span v-if="item.shortcut" :class="styles.shortcut">{{
+      item.shortcut
+    }}</span>
   </component>
 </template>

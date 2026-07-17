@@ -1,33 +1,29 @@
-export type IDMapUserType = 'user' | 'bot';
+export type IDMapUserType = 'user' | 'bot'
 
 export interface IDMapUser {
-	username: string;
-	matrixId: string;
-	nickname: string;
-	type: IDMapUserType;
+  username: string
+  matrixId: string
+  nickname: string
+  type: IDMapUserType
 }
 
 export interface IDmap {
-	/** 本地用户映射表（单表） */
-	list: IDMapUser[];
+  /** 本地用户映射表（单表） */
+  list: IDMapUser[]
 }
-
-
-
 
 export interface GetIMUserInfoApiResponse {
-    username: string;
-    atype: string;
-    im: string;
-    nickname: string;
+  username: string
+  atype: string
+  im: string
+  nickname: string
 }
 
-
 export interface GetSSOUserInfoApiResponse {
-    username: string;
-    atype: string;
-    im: string;
-    nickname: string;
-    display_name: string;
-  avatar_url: string | null;
+  username: string
+  atype: string
+  im: string
+  nickname: string
+  display_name: string
+  avatar_url: string | null
 }

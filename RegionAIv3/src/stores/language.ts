@@ -1,3 +1,5 @@
+/*
+
 import { logInfo, logWarn } from "@/utils/logger";
 import { createI18n } from "vue-i18n";
 import { defineStore } from "pinia";
@@ -26,11 +28,7 @@ const i18n = createI18n({
   messages,
 });
 
-/**
- * Pinia Store: language
- * 提供直观的语言管理 API：getLanguageList / setLanguage / cycleLanguage / initLanguage
- * 注意：不包含任何“用户上传语言”的功能
- */
+
 export const useLanguageStore = defineStore("language", () => {
   const currentLanguage = ref<string>(
     (i18n.global.locale as unknown as { value: string }).value ??
@@ -141,3 +139,6 @@ export const useLanguageStore = defineStore("language", () => {
 });
 
 export default i18n;
+
+
+*/
