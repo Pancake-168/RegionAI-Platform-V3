@@ -554,7 +554,7 @@ watch(
     <!-- ===================== -->
     <!-- 数据表格视图 -->
     <!-- ===================== -->
-    <div v-else-if="rows.length" class="tableWrap">
+    <div v-if="rows.length" class="tableWrap">
       <ScrollArea>
         <table class="dataTable">
           <thead>

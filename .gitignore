@@ -76,3 +76,6 @@ Pancake/Server/FastAPI/temp/
 .claude/
 .github/*
 !.github/workflows/
+
+
+pro/
