@@ -12,3 +12,22 @@ export interface IDmap {
 	list: IDMapUser[];
 }
 
+
+
+
+export interface GetIMUserInfoApiResponse {
+    username: string;
+    atype: string;
+    im: string;
+    nickname: string;
+}
+
+
+export interface GetSSOUserInfoApiResponse {
+    username: string;
+    atype: string;
+    im: string;
+    nickname: string;
+    display_name: string;
+  avatar_url: string | null;
+}
