@@ -20,7 +20,9 @@ const isAdmin = computed(() => route.path === '/admin')
           <!-- 首页导航链接 -->
           <router-link to="/">首页</router-link>
           <!-- 后台管理导航链接（只在 admin 页面显示） -->
-          <router-link v-if="isAdmin" to="/admin">后台管理</router-link>
+          <router-link v-if="isAdmin || true" to="/admin">后台管理</router-link>
+           <router-link to="/demo">demo</router-link>
+
         </nav>
         <div class="app-content">
           <router-view />

@@ -76,4 +76,32 @@ export const API_URLS = {
 
   //更新用户配置 post请求
   UpdateUserConfig: () => `${getApiBase()}/api/auth/userconfig`,
+
+  /**
+   * Watchtower
+   */
+  // 启动容器 POST
+  StartContainer: (username: string) =>
+    `${getApiBase()}/api/v2/cc/docker/${username}/start`,
+  // 停止容器 POST
+  StopContainer: (username: string) =>
+    `${getApiBase()}/api/v2/cc/docker/${username}/stop`,
+  // 重启容器 POST
+  RestartContainer: (username: string) =>
+    `${getApiBase()}/api/v2/cc/docker/${username}/restart`,
+  // 移除容器 DELETE
+  RemoveContainer: (username: string) =>
+    `${getApiBase()}/api/v2/cc/docker/${username}`,
+  // 获取容器日志 GET
+  GetContainerLogs:(username:string) =>
+    `${getApiBase()}/api/v2/cc/docker/${username}/logs`,
+  // 获取容器状态 GET
+  GetContainerStatus:(username:string) =>
+    `${getApiBase()}/api/v2/cc/docker/${username}/status`,
+  // 列出所有容器 GET
+  ListContainers:() =>
+     `${getApiBase()}/api/v2/cc/docker?all=true`
+  
+
+
 }

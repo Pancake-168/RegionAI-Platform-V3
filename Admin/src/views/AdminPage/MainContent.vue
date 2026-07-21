@@ -1,19 +1,23 @@
 <script setup lang="ts">
 // MainContent — 后台管理页面的中间内容区
-// 负责展示 NocoBase 数据：根层级数据（JSON 视图）、子应用数据（表格）、SSO 合并视图
-// 包含三级缓存（appInfo/table/sso）+ 三级 Promise inFlight 去重
-import { computed, ref, watch } from 'vue' // Vue 响应式 API
+// 负责展示 NocoBase 数据：根层级数据（JSON 视图）、子应用数据（表格）
+// 包含三级缓存（appInfo/table）+ 三级 Promise inFlight 去重
+import { computed, h, ref, watch } from 'vue' // Vue 响应式 API
+import { Icon } from '@iconify/vue'
 import { createLogger } from '@/utils/logger' // 项目日志体系
 import {
   Button,
+  Confirm,
+  ContextMenu,
   Dialog,
   EmptyState,
+  IconContainer,
   Input,
   ScrollArea,
   Select,
   Skeleton,
 } from '@/components/common' // 通用组件
-import type { SelectOption } from '@/components/common/types' // Select 选项类型
+import type { MenuItem, SelectOption } from '@/components/common/types' // Select 选项类型
 import { toast } from '@/composables/useToast' // Toast 通知函数
 // 服务层函数
 import {
@@ -21,6 +25,8 @@ import {
   getCollectionDataByApplication,
 } from '@/services/NocoBase/data/info'
 import { register } from '@/services/Project/SSO/LoginOrRegister'
+import { getTokenByUsername, getAllAccountTypes } from '@/services/Project/SSO/CopyToken'
+import { ListContainers, StartContainer, StopContainer, RestartContainer, GetContainerLogs } from '@/services/Project/Watchtower'
 
 // 创建 logger 实例
 const log = createLogger('MainContent.vue', 'MainContent')
@@ -62,17 +68,15 @@ const emit = defineEmits<{
 const selectedCollection = ref<string>('')
 // 当前子应用的探测结果
 const appInfo = ref<InfoPayload | null>(null)
-// SSO 合并视图开关
-const showSSOView = ref<boolean>(false)
-// SSO 合并后的记录
-const ssoMergedRecords = ref<Array<Record<string, unknown>>>([])
 // 加载状态
 const appLoading = ref<boolean>(false) // 子应用数据加载中
 const tableLoading = ref<boolean>(false) // 表格数据加载中
-const ssoLoading = ref<boolean>(false) // SSO 数据加载中
 
 // 当前 collection 的表格数据行
 const appTableRows = ref<Array<Record<string, unknown>>>([])
+
+const botUsernames = ref<Set<string>>(new Set())
+const containerStatuses = ref<Record<string, string>>({})
 
 // =====================
 // 三级缓存 + 三级 inFlight 去重
@@ -81,21 +85,14 @@ const appTableRows = ref<Array<Record<string, unknown>>>([])
 // Map 缓存：key → 已获取的数据，命中后直接返回不发起请求
 const appInfoCache = new Map<string, InfoPayload>() // 子应用探测结果缓存
 const tableCache = new Map<string, Array<Record<string, unknown>>>() // collection 数据缓存
-const ssoCache = new Map<string, Array<Record<string, unknown>>>() // SSO 合并数据缓存
 
 // Promise 去重：同一 key 正在请求中时复用已有 Promise，避免并发重复请求
 const appInfoInFlight = new Map<string, Promise<InfoPayload | null>>() // 子应用探测 inFlight
 const tableInFlight = new Map<string, Promise<Array<Record<string, unknown>>>>() // collection inFlight
-const ssoInFlight = new Map<string, Promise<Array<Record<string, unknown>>>>() // SSO inFlight
 
 // =====================
 // 派生数据
 // =====================
-
-// 是否显示 SSO 视图（仅 A_SYSTEM_SSO 应用）
-const isSSOApp = computed<boolean>(
-  () => props.selectedApp?.name === 'A_SYSTEM_SSO',
-)
 
 // 根层级 baseData
 const baseData = computed<Record<string, unknown>>(
@@ -115,13 +112,19 @@ const appCollections = computed<Array<Record<string, unknown>>>(() => {
 // 当前表格数据行：子应用模式取 collection 数据；本层模式取 selectedBaseKey 对应的数组
 const rows = computed<Array<Record<string, unknown>>>(() => {
   // 子应用模式
+  let list: Array<Record<string, unknown>> = []
   if (props.selectedApp) {
-    return Array.isArray(appTableRows.value) ? appTableRows.value : []
+    list = Array.isArray(appTableRows.value) ? appTableRows.value : []
+  } else if (props.selectedBaseKey) {
+    // 本层模式
+    const data = baseData.value[props.selectedBaseKey]
+    list = Array.isArray(data) ? (data as Array<Record<string, unknown>>) : []
   }
-  // 本层模式
-  if (!props.selectedBaseKey) return []
-  const data = baseData.value[props.selectedBaseKey]
-  return Array.isArray(data) ? (data as Array<Record<string, unknown>>) : []
+  // users 表下隐藏 id=1 的系统账号
+  if (selectedCollection.value === 'users') {
+    list = list.filter((row) => row.id !== 1)
+  }
+  return list
 })
 
 // 表格中需要隐藏的系统字段
@@ -130,6 +133,8 @@ const HIDDEN_COLUMNS = new Set([
   'updatedAt',
   'createdById',
   'updatedById',
+  'expires_at',
+  'issued_at'
 ])
 
 // 动态列：从所有行数据中提取唯一的 key 集合作为表头，排除系统字段
@@ -147,10 +152,15 @@ const columns = computed<string[]>(() => {
   return Array.from(colSet)
 })
 
+// 当前选中的是否是 users 表
+const isOtherAppUsersTable = computed<boolean>(
+  () => selectedCollection.value === 'users' &&  props.selectedApp?.name !== 'A_SYSTEM_APPLICATION' ,
+)
+
 // collections 的 Select 选项（仅渲染 users 表）
 const collectionSelectOptions = computed<SelectOption[]>(() =>
   appCollections.value
-    .filter((col) => col.name === 'users')
+   .filter((col) => col.name === 'users')
     .map((col) => ({
       value: col.name as string, // option 值
       label: col.name as string, // option 显示文本
@@ -171,6 +181,7 @@ const pickPreferredAttempts = (attempts: unknown): Record<string, unknown> => {
 }
 
 // 从各种响应格式中提取数组
+/*
 const getListData = (payload: unknown): Array<Record<string, unknown>> => {
   // 本身就是数组
   if (Array.isArray(payload)) return payload as Array<Record<string, unknown>>
@@ -186,6 +197,8 @@ const getListData = (payload: unknown): Array<Record<string, unknown>> => {
   // 其他 → 空数组
   return []
 }
+*/
+
 
 // 格式化单元格值：null/undefined → 空字符串，object → JSON，其他 → 字符串
 const formatCell = (value: unknown): string => {
@@ -281,114 +294,134 @@ const refresh = (): void => {
   emit('refresh')
 }
 
+// 复制用户 token
+const copyToken = async (row: Record<string, unknown>): Promise<void> => {
+  const username = row.username as string | undefined
+  if (!username) {
+    toast('该记录缺少 username 字段', 'error')
+    return
+  }
+  const result = await getTokenByUsername(username)
+  if (!result.ok) {
+    toast(result.error || '获取 token 失败', 'error')
+    return
+  }
+  await navigator.clipboard.writeText(result.data)
+  toast('token 已复制', 'success')
+}
+
+// Bot 标签：切到其他应用 users 表时拉取 bot 列表和容器状态
+watch(isOtherAppUsersTable, async (isUsers) => {
+  if (!isUsers) { botUsernames.value = new Set(); containerStatuses.value = {}; return }
+  const r = await getAllAccountTypes()
+  if (r.ok && r.data) {
+    const s = new Set<string>()
+    for (const [u, t] of Object.entries(r.data)) { if (t === 'bot') s.add(u) }
+    botUsernames.value = s
+  }
+  await refreshContainerStatuses()
+})
+
 // =====================
-// SSO 视图
+// 右键菜单：bot 容器操作
 // =====================
 
-// 切换 SSO 视图开关
-const toggleSSOView = async (): Promise<void> => {
-  // 切换布尔值
-  showSSOView.value = !showSSOView.value
-  // 打开时自动加载数据
-  if (showSSOView.value) {
-    await refreshSSOData()
+const confirmOpen = ref(false)
+const confirmAction = ref<'' | 'start' | 'stop' | 'restart'>('')
+const confirmTarget = ref<Record<string, unknown> | null>(null)
+
+// 日志弹窗
+const logDialogOpen = ref(false)
+const logTargetName = ref('')
+const logContent = ref('')
+const logLoading = ref(false)
+
+const confirmLabels: Record<string, string> = {
+  start: '启动',
+  stop: '停止',
+  restart: '重启',
+}
+
+const botMenuItems = (row: Record<string, unknown>): MenuItem[] => [
+  {
+    label: '启动',
+    icon: h(IconContainer, { size: 14 }, () => h(Icon, { icon: 'codicon:debug-start', width: 14 })),
+    onClick: () => openConfirm('start', row),
+  },
+  {
+    label: '停止',
+    icon: h(IconContainer, { size: 14 }, () => h(Icon, { icon: 'codicon:debug-stop', width: 14 })),
+    onClick: () => openConfirm('stop', row),
+  },
+  {
+    label: '重启',
+    icon: h(IconContainer, { size: 14 }, () => h(Icon, { icon: 'codicon:debug-restart', width: 14 })),
+    onClick: () => openConfirm('restart', row),
+  },
+  { label: '', separator: true },
+  {
+    label: '获取日志',
+    icon: h(IconContainer, { size: 14 }, () => h(Icon, { icon: 'codicon:output', width: 14 })),
+    onClick: () => openLogDialog(row),
+  },
+]
+
+async function openLogDialog(row: Record<string, unknown>) {
+  const username = row.username as string
+  logTargetName.value = username
+  logDialogOpen.value = true
+  logContent.value = ''
+  logLoading.value = true
+  const r = await getTokenByUsername(username)
+  if (!r.ok) { toast(r.error || '获取 token 失败', 'error'); logLoading.value = false; return }
+  const res = await GetContainerLogs(r.data, username)
+  logLoading.value = false
+  if (res.ok && res.data) {
+    logContent.value = res.data.logs
+  } else {
+    toast(res.error || '获取日志失败', 'error')
   }
 }
 
-// 获取并合并 SSO 数据
-const refreshSSOData = async (): Promise<void> => {
-  // 清空当前数据
-  ssoMergedRecords.value = []
-  // 需要选中有子应用
-  if (!props.selectedApp?.name) return
-  const appName = props.selectedApp.name as string
+function openConfirm(action: 'start' | 'stop' | 'restart', row: Record<string, unknown>) {
+  confirmAction.value = action
+  confirmTarget.value = row
+  confirmOpen.value = true
+}
 
-  // 1. 检查缓存
-  const cached = ssoCache.get(appName)
-  if (cached) {
-    log.info('SSO 缓存命中', { appName })
-    ssoMergedRecords.value = cached
-    return
+async function handleContainerAction() {
+  if (!confirmTarget.value) return
+  const username = confirmTarget.value.username as string
+  const r = await getTokenByUsername(username)
+  if (!r.ok) { toast(r.error || '获取 token 失败', 'error'); return }
+  const token = r.data
+  let result: { ok: boolean; error?: string }
+  switch (confirmAction.value) {
+    case 'start': result = await StartContainer(token, username); break
+    case 'stop': result = await StopContainer(token, username); break
+    case 'restart': result = await RestartContainer(token, username); break
+    default: return
   }
-
-  // 2. 检查 inFlight
-  if (ssoInFlight.has(appName)) {
-    log.info('SSO inFlight 去重', { appName })
-    ssoMergedRecords.value = (await ssoInFlight.get(appName)!) || []
-    return
+  confirmOpen.value = false
+  if (result.ok) {
+    toast(`${confirmLabels[confirmAction.value]}成功`, 'success')
+    setTimeout(refreshContainerStatuses, 1500)
+  } else {
+    toast(result.error || '操作失败', 'error')
   }
+}
 
-  // 3. 发起请求
-  ssoLoading.value = true
-  const task = (async (): Promise<Array<Record<string, unknown>>> => {
-    // 辅助函数：获取指定 collection 数据（带 table cache）
-    const fetchList = async (
-      collection: string,
-    ): Promise<Array<Record<string, unknown>>> => {
-      // cache key：appName:collection
-      const cacheKey = `${appName}:${collection}`
-      // 查 table 缓存
-      const cachedTable = tableCache.get(cacheKey)
-      if (cachedTable) {
-        log.info('Table 缓存命中', { cacheKey })
-        return cachedTable
-      }
-      // 请求 collection 数据
-      const response = await getCollectionDataByApplication(
-        appName,
-        collection,
-        { pageSize: 200 },
-      )
-      const data = pickPreferredAttempts(response?.attempts)
-      const list = getListData(data)
-      // 存入 table 缓存
-      tableCache.set(cacheKey, list)
-      return list
+async function refreshContainerStatuses() {
+  const c = await ListContainers()
+  log.info('刷新容器状态', { ok: c.ok, total: c.ok ? c.data?.total : 0 })
+  if (c.ok && c.data) {
+    const map: Record<string, string> = {}
+    for (const item of c.data.containers) {
+      const uname = item.name?.replace(/^shayu-/, '')
+      if (uname) map[uname] = item.status
     }
-
-    // 并行获取两张表
-    const [accounts, sessions] = await Promise.all([
-      fetchList('a_account'),
-      fetchList('a_login_session'),
-    ])
-    log.info('SSO 数据合并', {
-      accountCount: accounts.length,
-      sessionCount: sessions.length,
-    })
-
-    // 以 openid 关联合并
-    const merged = accounts.map((acc) => {
-      const openid = acc.openid as string // 用户唯一标识
-      const sess =
-        (sessions as Array<Record<string, unknown>>).find(
-          (s) => s.openid === openid,
-        ) || {} // 查找会话
-      return {
-        openid: acc.openid, // OpenID
-        wx_unionid: acc.wx_unionid, // 微信 UnionID
-        atype: acc.atype, // 账户类型（user/bot）
-        username: acc.username, // 用户名
-        password: acc.password, // 密码
-        token: sess.token || '-', // 登录 Token（来自 session 表，无则 '-'）
-        matrix_token: sess.matrix_token || '-', // Matrix Token（来自 session 表）
-      }
-    })
-
-    log.info('SSO 合并完成', { mergedCount: merged.length })
-    return merged
-  })()
-
-  // 设置 inFlight 去重
-  ssoInFlight.set(appName, task)
-  const merged = await task
-  // 清除 inFlight
-  ssoInFlight.delete(appName)
-  // 存入 SSO 缓存
-  ssoCache.set(appName, merged)
-  // 更新响应式数据
-  ssoMergedRecords.value = merged
-  // 结束加载
-  ssoLoading.value = false
+    containerStatuses.value = map
+  }
 }
 
 // =====================
@@ -401,8 +434,6 @@ watch(
     // 清空之前的状态
     selectedCollection.value = '' // 清空选中的 collection
     appTableRows.value = [] // 清空表格数据
-    showSSOView.value = false // 关闭 SSO 视图
-    ssoMergedRecords.value = [] // 清空 SSO 数据
 
     // 无 app → 清空 appInfo
     if (!app?.name) {
@@ -515,7 +546,7 @@ watch(
 
 <template>
   <!-- 中间内容区根容器 -->
-  <div class="panel">
+  <div class="panel" @contextmenu.prevent>
     <!-- ===================== -->
     <!-- 工具栏 -->
     <!-- ===================== -->
@@ -533,17 +564,12 @@ watch(
 
       <!-- 注册按钮 -->
       <Button variant="primary" @click="openRegisterDialog">注册</Button>
-
-      <!-- SSO 切换按钮：仅 A_SYSTEM_SSO 应用显示 -->
-      <Button v-if="isSSOApp" variant="subtle" @click="toggleSSOView">
-        {{ showSSOView ? '返回默认视图' : 'SSO 合并视图' }}
-      </Button>
     </div>
 
     <!-- ===================== -->
     <!-- Collection 选择器（子应用模式） -->
     <!-- ===================== -->
-    <div v-if="selectedApp && !showSSOView" class="collectionBar">
+    <div v-if="selectedApp" class="collectionBar">
       <Select
         v-model="selectedCollection"
         :options="collectionSelectOptions"
@@ -559,6 +585,8 @@ watch(
         <table class="dataTable">
           <thead>
             <tr>
+              <!-- users 表：操作列 -->
+              <th v-if="isOtherAppUsersTable" class="actionCol">操作</th>
               <!-- 动态表头列 -->
               <th v-for="col in columns" :key="col">{{ col }}</th>
             </tr>
@@ -566,6 +594,34 @@ watch(
           <tbody>
             <!-- 数据行 -->
             <tr v-for="(row, rowIndex) in rows" :key="rowKey(row, rowIndex)">
+              <!-- users 表：复制 token 按钮 + bot 标签 -->
+              <td v-if="isOtherAppUsersTable" class="actionCol">
+                <ContextMenu
+                  :items="botMenuItems(row)"
+                  :disabled="!botUsernames.has(row.username as string)"
+                >
+                  <span class="actionRow">
+                <Button variant="subtle" @click="copyToken(row)">
+                  <template #icon>
+                    <IconContainer :size="14">
+                      <Icon icon="codicon:copy" :width="14" />
+                    </IconContainer>
+                  </template>
+                  复制token
+                </Button>
+                <Button v-if="botUsernames.has(row.username as string)" variant="secondary" disabled>bot</Button>
+                <span
+                  v-if="containerStatuses[row.username as string]"
+                  class="statusDot"
+                  :class="containerStatuses[row.username as string] === 'running' ? 'statusRunning' : 'statusStopped'"
+                ></span>
+                <span
+                  v-if="containerStatuses[row.username as string]"
+                  class="statusText"
+                >{{ containerStatuses[row.username as string] }}</span>
+                </span>
+                </ContextMenu>
+              </td>
               <td v-for="col in columns" :key="col">
                 <div class="cellContent">{{ formatCell(row[col]) }}</div>
               </td>
@@ -591,6 +647,46 @@ watch(
       />
     </div>
   </div>
+
+  <!-- ===================== -->
+  <!-- 容器操作确认弹窗 -->
+  <!-- ===================== -->
+  <Confirm
+    :open="confirmOpen"
+    :title="`确认${confirmLabels[confirmAction]}容器`"
+    :description="`确定要${confirmLabels[confirmAction]} Bot「${confirmTarget?.username}」的容器吗？`"
+    :confirm-label="confirmLabels[confirmAction]"
+    @update:open="confirmOpen = $event"
+    @confirm="handleContainerAction"
+  />
+
+  <!-- ===================== -->
+  <!-- 容器日志弹窗 -->
+  <!-- ===================== -->
+  <Dialog
+    :open="logDialogOpen"
+    :title="`容器日志 - ${logTargetName}`"
+    @update:open="logDialogOpen = $event"
+  >
+    <div v-if="logLoading" class="centerState">
+      <Skeleton variant="text" :count="10" />
+    </div>
+    <div v-else class="logWrapper">
+      <ScrollArea :max-height="400">
+        <pre class="logPre">{{ logContent || '暂无日志' }}</pre>
+      </ScrollArea>
+    </div>
+    <div v-if="!logLoading" class="logActions">
+      <Button variant="subtle" @click="openLogDialog({ username: logTargetName })">
+        <template #icon>
+          <IconContainer :size="14">
+            <Icon icon="codicon:refresh" :width="14" />
+          </IconContainer>
+        </template>
+        刷新
+      </Button>
+    </div>
+  </Dialog>
 
   <!-- ===================== -->
   <!-- 注册弹窗 -->
@@ -696,7 +792,7 @@ watch(
   border-bottom: 1px solid var(--glass-brd); /* 底边框 */
   text-align: left; /* 左对齐 */
   color: var(--text); /* 文字色 */
-  vertical-align: top; /* 顶部对齐 */
+  vertical-align: middle; /* 垂直居中 */
   white-space: nowrap; /* 不换行 */
 }
 
@@ -721,42 +817,39 @@ watch(
   white-space: nowrap; /* 不换行 */
 }
 
-/* SSO 区域 */
-.ssoSection {
-  display: flex; /* flex */
-  flex-direction: column; /* 纵向 */
-  flex: 1; /* 占剩余空间 */
-  min-height: 0; /* 允许收缩 */
-  overflow: hidden; /* 隐藏溢出 */
+/* 操作列 */
+.actionCol {
+  width: 1%;
+  white-space: nowrap;
 }
 
-/* SSO 工具栏 */
-.ssoToolbar {
-  display: flex; /* flex */
-  justify-content: space-between; /* 两端对齐 */
-  align-items: center; /* 垂直居中 */
-  padding: var(--spacing-md) var(--spacing-lg); /* 内边距 */
-  flex-shrink: 0; /* 不收缩 */
+.actionRow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: default;
 }
 
-/* SSO 标题 */
-.ssoTitle {
-  font-size: var(--text-sm); /* 小字号 */
-  font-weight: 600; /* 加粗 */
-  color: var(--text); /* 主文字色 */
+/* 容器状态指示点 */
+.statusDot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-left: var(--spacing-sm);
+  border-radius: 50%;
+  vertical-align: middle;
 }
-
-/* SSO 控制区 */
-.ssoControls {
-  display: flex; /* flex */
-  gap: var(--spacing-sm); /* 间距 */
-  align-items: center; /* 居中 */
+.statusRunning {
+  background: var(--color-success);
 }
-
-/* SSO 操作按钮组 */
-.ssoActions {
-  display: flex; /* flex */
-  gap: var(--spacing-xs); /* 间距 */
+.statusStopped {
+  background: var(--color-error);
+}
+.statusText {
+  margin-left: 2px;
+  font-size: var(--text-xs);
+  color: var(--muted);
+  vertical-align: middle;
 }
 
 /* JSON 视图 */
@@ -798,5 +891,24 @@ watch(
   display: flex; /* flex */
   flex-direction: column; /* 纵向 */
   gap: var(--spacing-lg); /* 字段间距 */
+}
+
+/* 日志弹窗 */
+.logPre {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.logActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--spacing-md);
+}
+
+.logWrapper {
+  min-width: 800px;
 }
 </style>

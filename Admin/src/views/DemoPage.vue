@@ -69,25 +69,25 @@ const fruitOptions: SelectOption[] = [
 const dropdownItems: MenuItem[] = [
   {
     label: '编辑',
-    icon: h(Icon, { icon: 'codicon:edit', width: 14 }),
+    icon: h(IconContainer, { size: 14 }, () => h(Icon, { icon: 'codicon:edit', width: 14 })),
     shortcut: '⌘E',
     onClick: () => toast('点击了编辑', 'info'),
   },
   {
     label: '复制',
-    icon: h(Icon, { icon: 'codicon:copy', width: 14 }),
+    icon: h(IconContainer, { size: 14 }, () => h(Icon, { icon: 'codicon:copy', width: 14 })),
     shortcut: '⌘C',
     onClick: () => toast('已复制', 'success'),
   },
   {
     label: '刷新',
-    icon: h(Icon, { icon: 'codicon:refresh', width: 14 }),
+    icon: h(IconContainer, { size: 14 }, () => h(Icon, { icon: 'codicon:refresh', width: 14 })),
     onClick: () => toast('已刷新', 'success'),
   },
   { label: '', separator: true },
   {
     label: '删除',
-    icon: h(Icon, { icon: 'codicon:trash', width: 14 }),
+    icon: h(IconContainer, { size: 14 }, () => h(Icon, { icon: 'codicon:trash', width: 14 })),
     danger: true,
     onClick: () => toast('删除操作需确认', 'warn'),
   },
@@ -97,19 +97,19 @@ const dropdownItems: MenuItem[] = [
 const contextMenuItems: MenuItem[] = [
   {
     label: '查看详情',
-    icon: h(Icon, { icon: 'codicon:info', width: 14 }),
+    icon: h(IconContainer, { size: 14 }, () => h(Icon, { icon: 'codicon:info', width: 14 })),
     onClick: () => toast('查看详情', 'info'),
   },
   {
     label: '复制文本',
-    icon: h(Icon, { icon: 'codicon:copy', width: 14 }),
+    icon: h(IconContainer, { size: 14 }, () => h(Icon, { icon: 'codicon:copy', width: 14 })),
     shortcut: '⌘C',
     onClick: () => toast('已复制', 'success'),
   },
   { label: '', separator: true },
   {
     label: '删除',
-    icon: h(Icon, { icon: 'codicon:trash', width: 14 }),
+    icon: h(IconContainer, { size: 14 }, () => h(Icon, { icon: 'codicon:trash', width: 14 })),
     danger: true,
     onClick: () => toast('已删除', 'error'),
   },
@@ -120,7 +120,7 @@ const demoTabs: TabItem[] = [
   {
     id: 'tab-1',
     label: '概览',
-    icon: h(Icon, { icon: 'codicon:home', width: 14 }),
+    icon: h(IconContainer, { size: 14 }, () => h(Icon, { icon: 'codicon:home', width: 14 })),
     content: h(
       'p',
       { style: { color: 'var(--text)', fontSize: 'var(--text-base)' } },
@@ -130,7 +130,7 @@ const demoTabs: TabItem[] = [
   {
     id: 'tab-2',
     label: '设置',
-    icon: h(Icon, { icon: 'codicon:settings-gear', width: 14 }),
+    icon: h(IconContainer, { size: 14 }, () => h(Icon, { icon: 'codicon:settings-gear', width: 14 })),
     content: h(
       'p',
       { style: { color: 'var(--text)', fontSize: 'var(--text-base)' } },
@@ -140,7 +140,7 @@ const demoTabs: TabItem[] = [
   {
     id: 'tab-3',
     label: '通知',
-    icon: h(Icon, { icon: 'codicon:bell', width: 14 }),
+    icon: h(IconContainer, { size: 14 }, () => h(Icon, { icon: 'codicon:bell', width: 14 })),
     content: h(
       'p',
       { style: { color: 'var(--text)', fontSize: 'var(--text-base)' } },
@@ -191,8 +191,8 @@ const labelStyle = {
 } as const
 
 // ---- DropdownMenu trigger VNodes（h() 在 script 中创建，传给 :trigger prop） ----
-const dropdownTriggerFull = h('button', { class: 'btn secondary' }, '打开菜单')
-const dropdownTriggerPlain = h('button', { class: 'btn subtle' }, '简单菜单')
+const dropdownTriggerFull = h(Button, { variant: 'secondary' }, () => '打开菜单')
+const dropdownTriggerPlain = h(Button, { variant: 'subtle' }, () => '简单菜单')
 
 log.info('进入Demo页')
 </script>
@@ -252,20 +252,20 @@ log.info('进入Demo页')
         <div :style="rowStyle">
           <span :style="labelStyle">带图标</span>
           <Button variant="primary"
-            ><template #icon><Icon icon="codicon:add" :width="14" /></template
+            ><template #icon><IconContainer :size="14"><Icon icon="codicon:add" :width="14" /></IconContainer></template
             >新建</Button
           >
           <Button variant="secondary"
             ><template #icon
-              ><Icon icon="codicon:search" :width="14" /></template
+              ><IconContainer :size="14"><Icon icon="codicon:search" :width="14" /></IconContainer></template
             >搜索</Button
           >
           <Button variant="subtle"
-            ><template #icon><Icon icon="codicon:edit" :width="14" /></template
+            ><template #icon><IconContainer :size="14"><Icon icon="codicon:edit" :width="14" /></IconContainer></template
             >编辑</Button
           >
           <Button variant="danger"
-            ><template #icon><Icon icon="codicon:trash" :width="14" /></template
+            ><template #icon><IconContainer :size="14"><Icon icon="codicon:trash" :width="14" /></IconContainer></template
             >删除</Button
           >
         </div>
@@ -575,28 +575,28 @@ log.info('进入Demo页')
         <div :style="rowStyle">
           <span :style="labelStyle">上（默认）</span>
           <Tooltip content="这是上方弹出的提示文字"
-            ><button class="btn subtle">悬停看提示（上）</button></Tooltip
+            ><Button variant="subtle">悬停看提示（上）</Button></Tooltip
           >
         </div>
         <div :style="rowStyle">
           <span :style="labelStyle">四个方向</span>
           <Tooltip content="上方提示" side="top"
-            ><button class="btn subtle">上</button></Tooltip
+            ><Button variant="subtle">上</Button></Tooltip
           >
           <Tooltip content="右侧提示" side="right"
-            ><button class="btn subtle">右</button></Tooltip
+            ><Button variant="subtle">右</Button></Tooltip
           >
           <Tooltip content="下方提示" side="bottom"
-            ><button class="btn subtle">下</button></Tooltip
+            ><Button variant="subtle">下</Button></Tooltip
           >
           <Tooltip content="左侧提示" side="left"
-            ><button class="btn subtle">左</button></Tooltip
+            ><Button variant="subtle">左</Button></Tooltip
           >
         </div>
         <div :style="rowStyle">
           <span :style="labelStyle">长延迟</span>
           <Tooltip content="悬停 1 秒后才出现" :delay-duration="1000"
-            ><button class="btn subtle">悬停 1s</button></Tooltip
+            ><Button variant="subtle">悬停 1s</Button></Tooltip
           >
         </div>
       </div>
@@ -613,7 +613,7 @@ log.info('进入Demo页')
           <span :style="labelStyle">表单卡片</span>
           <Popover side="bottom" align="start">
             <template #trigger
-              ><button class="btn secondary">打开筛选面板</button></template
+              ><Button variant="secondary">打开筛选面板</Button></template
             >
             <div
               :style="{
@@ -648,7 +648,7 @@ log.info('进入Demo页')
           <span :style="labelStyle">不同对齐</span>
           <Popover side="bottom" align="start">
             <template #trigger
-              ><button class="btn subtle">开头对齐</button></template
+              ><Button variant="subtle">开头对齐</Button></template
             >
             <div
               :style="{
@@ -662,7 +662,7 @@ log.info('进入Demo页')
           </Popover>
           <Popover side="bottom" align="center">
             <template #trigger
-              ><button class="btn subtle">居中对齐</button></template
+              ><Button variant="subtle">居中对齐</Button></template
             >
             <div
               :style="{
@@ -676,7 +676,7 @@ log.info('进入Demo页')
           </Popover>
           <Popover side="bottom" align="end">
             <template #trigger
-              ><button class="btn subtle">末尾对齐</button></template
+              ><Button variant="subtle">末尾对齐</Button></template
             >
             <div
               :style="{
@@ -1077,8 +1077,8 @@ log.info('进入Demo页')
               <template #action>
                 <Button variant="primary" @click="toast('去发现内容', 'info')">
                   <template #icon
-                    ><Icon icon="codicon:add" :width="14"
-                  /></template>
+                    ><IconContainer :size="14"><Icon icon="codicon:add" :width="14" /></IconContainer
+                  ></template>
                   去发现
                 </Button>
               </template>
@@ -1090,8 +1090,8 @@ log.info('进入Demo页')
           <div :style="{ width: '100%', maxWidth: '400px' }">
             <EmptyState title="无搜索结果" description="换个关键词试试">
               <template #icon
-                ><Icon icon="codicon:search" :width="48"
-              /></template>
+                ><IconContainer :size="48"><Icon icon="codicon:search" :width="48" /></IconContainer
+              ></template>
             </EmptyState>
           </div>
         </div>

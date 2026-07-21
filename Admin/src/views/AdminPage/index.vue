@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // AdminPage — 后台管理页面主体
-// 两栏布局：左侧面板（子应用列表/数据分组） + 中间内容区（数据表格/SSO视图）
+// 两栏布局：左侧面板（子应用列表/数据分组） + 中间内容区（数据表格）
 // 页面进入时自动检查登录态 → 已登录则自动获取根层级数据
 import { ref, onMounted } from 'vue' // Vue 响应式 API
 import { createLogger } from '@/utils/logger' // 项目日志体系

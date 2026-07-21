@@ -191,7 +191,12 @@ const canLogin = computed(() => {
 // ===== 服务器地址持久化 =====
 
 /// 校验并持久化单个地址字段
-function validateAndPersist(field: 'api' | 'matrix' | 'nocobase') {
+function validateAndPersist(field: 'api' | 'matrix' | 'nocobase' | 'all') {
+  if (field === 'all') {
+    apiBaseError.value = validateUrl(apiBaseUrl.value) ? '' : '请输入有效的服务器地址'
+    void persistServerUrls()
+    return
+  }
   // 根据字段名选择对应的 ref 和 error ref
   if (field === 'api') {
     apiBaseError.value = validateUrl(apiBaseUrl.value)
@@ -254,6 +259,22 @@ function applyServer(server: DiscoveredServer) {
 }
 
 if (isTauriRuntime) {
+  // watch 0：手动输入 API 地址时调 /regionai/identify 获取后两个端口
+  watch(apiBaseUrl, async (val) => {
+    if (!validateUrl(val) || !showManualConfig.value) return
+    try {
+      const identifyUrl = val.replace(/\/+$/, '') + '/regionai/identify'
+      const res = await fetch(identifyUrl)
+      if (res.ok) {
+        const data = await res.json() as { db_port?: string; im_port?: string }
+        const origin = new URL(val).origin
+        if (data.db_port) nocobaseUrl.value = `${origin.replace(/:\d+$/, '')}:${data.db_port}`
+        if (data.im_port) matrixUrl.value = `${origin.replace(/:\d+$/, '')}:${data.im_port}`
+        validateAndPersist('all')
+      }
+    } catch { /* identify 不可达时静默跳过 */ }
+  })
+
   // watch 1：discoveredServer 变化 → 齿轮未展开时自动 apply
   watch(discoveredServer, (server) => {
     if (server && !showManualConfig.value) {
