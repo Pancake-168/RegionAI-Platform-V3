@@ -93,15 +93,11 @@ export const API_URLS = {
   RemoveContainer: (username: string) =>
     `${getApiBase()}/api/v2/cc/docker/${username}`,
   // 获取容器日志 GET
-  GetContainerLogs:(username:string) =>
+  GetContainerLogs: (username: string) =>
     `${getApiBase()}/api/v2/cc/docker/${username}/logs`,
   // 获取容器状态 GET
-  GetContainerStatus:(username:string) =>
+  GetContainerStatus: (username: string) =>
     `${getApiBase()}/api/v2/cc/docker/${username}/status`,
   // 列出所有容器 GET
-  ListContainers:() =>
-     `${getApiBase()}/api/v2/cc/docker?all=true`
-  
-
-
+  ListContainers: () => `${getApiBase()}/api/v2/cc/docker?all=true`,
 }

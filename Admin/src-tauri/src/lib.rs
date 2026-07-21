@@ -3,6 +3,7 @@ use std::io::Write;
 use std::path::PathBuf;
 use chrono::Local;
 use tauri::Manager;
+use reqwest; // HTTP 客户端
 
 // 局域网 TCP 指纹扫描模块
 mod discover;
@@ -144,6 +145,19 @@ fn write_log(app_handle: tauri::AppHandle, entry: LogEntry) -> Result<(), String
         .map_err(|e| e.to_string())
 }
 
+/// 代理调 /regionai/identify，绕过浏览器 CORS
+#[tauri::command]
+async fn identify_server(api_url: String) -> Result<serde_json::Value, String> {
+    let identify_url = format!("{}/regionai/identify", api_url.trim_end_matches('/'));
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_millis(800))
+        .build()
+        .map_err(|e| e.to_string())?;
+    let resp = client.get(&identify_url).send().await.map_err(|e| e.to_string())?;
+    let body: serde_json::Value = resp.json().await.map_err(|e| e.to_string())?;
+    Ok(body)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -182,7 +196,7 @@ pub fn run() {
             window_builder.build().expect("failed to build window");
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![greet, write_log, get_device_info, discover::discover_server])
+        .invoke_handler(tauri::generate_handler![greet, write_log, get_device_info, discover::discover_server, identify_server])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|_app_handle, _event| {});

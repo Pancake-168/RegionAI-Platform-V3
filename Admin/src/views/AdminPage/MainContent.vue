@@ -25,8 +25,17 @@ import {
   getCollectionDataByApplication,
 } from '@/services/NocoBase/data/info'
 import { register } from '@/services/Project/SSO/LoginOrRegister'
-import { getTokenByUsername, getAllAccountTypes } from '@/services/Project/SSO/CopyToken'
-import { ListContainers, StartContainer, StopContainer, RestartContainer, GetContainerLogs } from '@/services/Project/Watchtower'
+import {
+  getTokenByUsername,
+  getAllAccountTypes,
+} from '@/services/Project/SSO/CopyToken'
+import {
+  ListContainers,
+  StartContainer,
+  StopContainer,
+  RestartContainer,
+  GetContainerLogs,
+} from '@/services/Project/Watchtower'
 
 // 创建 logger 实例
 const log = createLogger('MainContent.vue', 'MainContent')
@@ -134,7 +143,7 @@ const HIDDEN_COLUMNS = new Set([
   'createdById',
   'updatedById',
   'expires_at',
-  'issued_at'
+  'issued_at',
 ])
 
 // 动态列：从所有行数据中提取唯一的 key 集合作为表头，排除系统字段
@@ -154,13 +163,15 @@ const columns = computed<string[]>(() => {
 
 // 当前选中的是否是 users 表
 const isOtherAppUsersTable = computed<boolean>(
-  () => selectedCollection.value === 'users' &&  props.selectedApp?.name !== 'A_SYSTEM_APPLICATION' ,
+  () =>
+    selectedCollection.value === 'users' &&
+    props.selectedApp?.name !== 'A_SYSTEM_APPLICATION',
 )
 
 // collections 的 Select 选项（仅渲染 users 表）
 const collectionSelectOptions = computed<SelectOption[]>(() =>
   appCollections.value
-   .filter((col) => col.name === 'users')
+    .filter((col) => col.name === 'users')
     .map((col) => ({
       value: col.name as string, // option 值
       label: col.name as string, // option 显示文本
@@ -198,7 +209,6 @@ const getListData = (payload: unknown): Array<Record<string, unknown>> => {
   return []
 }
 */
-
 
 // 格式化单元格值：null/undefined → 空字符串，object → JSON，其他 → 字符串
 const formatCell = (value: unknown): string => {
@@ -312,11 +322,17 @@ const copyToken = async (row: Record<string, unknown>): Promise<void> => {
 
 // Bot 标签：切到其他应用 users 表时拉取 bot 列表和容器状态
 watch(isOtherAppUsersTable, async (isUsers) => {
-  if (!isUsers) { botUsernames.value = new Set(); containerStatuses.value = {}; return }
+  if (!isUsers) {
+    botUsernames.value = new Set()
+    containerStatuses.value = {}
+    return
+  }
   const r = await getAllAccountTypes()
   if (r.ok && r.data) {
     const s = new Set<string>()
-    for (const [u, t] of Object.entries(r.data)) { if (t === 'bot') s.add(u) }
+    for (const [u, t] of Object.entries(r.data)) {
+      if (t === 'bot') s.add(u)
+    }
     botUsernames.value = s
   }
   await refreshContainerStatuses()
@@ -345,23 +361,31 @@ const confirmLabels: Record<string, string> = {
 const botMenuItems = (row: Record<string, unknown>): MenuItem[] => [
   {
     label: '启动',
-    icon: h(IconContainer, { size: 14 }, () => h(Icon, { icon: 'codicon:debug-start', width: 14 })),
+    icon: h(IconContainer, { size: 14 }, () =>
+      h(Icon, { icon: 'codicon:debug-start', width: 14 }),
+    ),
     onClick: () => openConfirm('start', row),
   },
   {
     label: '停止',
-    icon: h(IconContainer, { size: 14 }, () => h(Icon, { icon: 'codicon:debug-stop', width: 14 })),
+    icon: h(IconContainer, { size: 14 }, () =>
+      h(Icon, { icon: 'codicon:debug-stop', width: 14 }),
+    ),
     onClick: () => openConfirm('stop', row),
   },
   {
     label: '重启',
-    icon: h(IconContainer, { size: 14 }, () => h(Icon, { icon: 'codicon:debug-restart', width: 14 })),
+    icon: h(IconContainer, { size: 14 }, () =>
+      h(Icon, { icon: 'codicon:debug-restart', width: 14 }),
+    ),
     onClick: () => openConfirm('restart', row),
   },
   { label: '', separator: true },
   {
     label: '获取日志',
-    icon: h(IconContainer, { size: 14 }, () => h(Icon, { icon: 'codicon:output', width: 14 })),
+    icon: h(IconContainer, { size: 14 }, () =>
+      h(Icon, { icon: 'codicon:output', width: 14 }),
+    ),
     onClick: () => openLogDialog(row),
   },
 ]
@@ -373,7 +397,11 @@ async function openLogDialog(row: Record<string, unknown>) {
   logContent.value = ''
   logLoading.value = true
   const r = await getTokenByUsername(username)
-  if (!r.ok) { toast(r.error || '获取 token 失败', 'error'); logLoading.value = false; return }
+  if (!r.ok) {
+    toast(r.error || '获取 token 失败', 'error')
+    logLoading.value = false
+    return
+  }
   const res = await GetContainerLogs(r.data, username)
   logLoading.value = false
   if (res.ok && res.data) {
@@ -383,7 +411,10 @@ async function openLogDialog(row: Record<string, unknown>) {
   }
 }
 
-function openConfirm(action: 'start' | 'stop' | 'restart', row: Record<string, unknown>) {
+function openConfirm(
+  action: 'start' | 'stop' | 'restart',
+  row: Record<string, unknown>,
+) {
   confirmAction.value = action
   confirmTarget.value = row
   confirmOpen.value = true
@@ -393,14 +424,24 @@ async function handleContainerAction() {
   if (!confirmTarget.value) return
   const username = confirmTarget.value.username as string
   const r = await getTokenByUsername(username)
-  if (!r.ok) { toast(r.error || '获取 token 失败', 'error'); return }
+  if (!r.ok) {
+    toast(r.error || '获取 token 失败', 'error')
+    return
+  }
   const token = r.data
   let result: { ok: boolean; error?: string }
   switch (confirmAction.value) {
-    case 'start': result = await StartContainer(token, username); break
-    case 'stop': result = await StopContainer(token, username); break
-    case 'restart': result = await RestartContainer(token, username); break
-    default: return
+    case 'start':
+      result = await StartContainer(token, username)
+      break
+    case 'stop':
+      result = await StopContainer(token, username)
+      break
+    case 'restart':
+      result = await RestartContainer(token, username)
+      break
+    default:
+      return
   }
   confirmOpen.value = false
   if (result.ok) {
@@ -601,25 +642,35 @@ watch(
                   :disabled="!botUsernames.has(row.username as string)"
                 >
                   <span class="actionRow">
-                <Button variant="subtle" @click="copyToken(row)">
-                  <template #icon>
-                    <IconContainer :size="14">
-                      <Icon icon="codicon:copy" :width="14" />
-                    </IconContainer>
-                  </template>
-                  复制token
-                </Button>
-                <Button v-if="botUsernames.has(row.username as string)" variant="secondary" disabled>bot</Button>
-                <span
-                  v-if="containerStatuses[row.username as string]"
-                  class="statusDot"
-                  :class="containerStatuses[row.username as string] === 'running' ? 'statusRunning' : 'statusStopped'"
-                ></span>
-                <span
-                  v-if="containerStatuses[row.username as string]"
-                  class="statusText"
-                >{{ containerStatuses[row.username as string] }}</span>
-                </span>
+                    <Button variant="subtle" @click="copyToken(row)">
+                      <template #icon>
+                        <IconContainer :size="14">
+                          <Icon icon="codicon:copy" :width="14" />
+                        </IconContainer>
+                      </template>
+                      复制token
+                    </Button>
+                    <Button
+                      v-if="botUsernames.has(row.username as string)"
+                      variant="secondary"
+                      disabled
+                      >bot</Button
+                    >
+                    <span
+                      v-if="containerStatuses[row.username as string]"
+                      class="statusDot"
+                      :class="
+                        containerStatuses[row.username as string] === 'running'
+                          ? 'statusRunning'
+                          : 'statusStopped'
+                      "
+                    ></span>
+                    <span
+                      v-if="containerStatuses[row.username as string]"
+                      class="statusText"
+                      >{{ containerStatuses[row.username as string] }}</span
+                    >
+                  </span>
                 </ContextMenu>
               </td>
               <td v-for="col in columns" :key="col">
@@ -677,7 +728,10 @@ watch(
       </ScrollArea>
     </div>
     <div v-if="!logLoading" class="logActions">
-      <Button variant="subtle" @click="openLogDialog({ username: logTargetName })">
+      <Button
+        variant="subtle"
+        @click="openLogDialog({ username: logTargetName })"
+      >
         <template #icon>
           <IconContainer :size="14">
             <Icon icon="codicon:refresh" :width="14" />

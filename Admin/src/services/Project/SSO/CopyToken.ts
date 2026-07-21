@@ -41,7 +41,6 @@ export async function getTokenByUsername(
       { filter: { username: trimmed }, pageSize: 1 },
     )
     // 提取数据：优先 appHeader，其次 appParam
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const raw = accountResult as any
     const accountData = raw?.attempts
     const preferredAccountData =
@@ -72,7 +71,6 @@ export async function getTokenByUsername(
       'a_login_session',
       { filter: { openid }, pageSize: 1 },
     )
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rawSession = sessionResult as any
     const sessionData = rawSession?.attempts
     const preferredSessionData =
@@ -126,7 +124,6 @@ export async function getAllAccountTypes(): Promise<
       'a_account',
       { pageSize: 500 },
     )
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const raw = result as any
     const data = raw?.attempts
     const preferred = data?.appHeader?.data || data?.appParam?.data

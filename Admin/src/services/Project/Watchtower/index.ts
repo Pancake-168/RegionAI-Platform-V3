@@ -46,11 +46,13 @@ async function resolveAuth(
   tokenOverride?: string,
   usernameOverride?: string,
 ): Promise<ApiResult<{ username: string; token: string }>> {
-  const username = usernameOverride || (await SystemStorageManager.getActiveUsername())
+  const username =
+    usernameOverride || (await SystemStorageManager.getActiveUsername())
   if (!username) {
     return { ok: false, data: null, error: '未获取到用户名' }
   }
-  const token = tokenOverride || (await SystemStorageManager.getLoginToken(username)) || ''
+  const token =
+    tokenOverride || (await SystemStorageManager.getLoginToken(username)) || ''
   if (!token) {
     return { ok: false, data: null, error: '未获取到有效token' }
   }
@@ -97,7 +99,13 @@ export async function StartContainer(
   tokenOverride?: string,
   usernameOverride?: string,
 ): Promise<ApiResult<ContainerStartResponse>> {
-  return callContainerApi('StartContainer', API_URLS.StartContainer, 'POST', tokenOverride, usernameOverride)
+  return callContainerApi(
+    'StartContainer',
+    API_URLS.StartContainer,
+    'POST',
+    tokenOverride,
+    usernameOverride,
+  )
 }
 
 // 停止容器
@@ -105,7 +113,13 @@ export async function StopContainer(
   tokenOverride?: string,
   usernameOverride?: string,
 ): Promise<ApiResult<ContainerStopResponse>> {
-  return callContainerApi('StopContainer', API_URLS.StopContainer, 'POST', tokenOverride, usernameOverride)
+  return callContainerApi(
+    'StopContainer',
+    API_URLS.StopContainer,
+    'POST',
+    tokenOverride,
+    usernameOverride,
+  )
 }
 
 // 重启容器
@@ -113,7 +127,13 @@ export async function RestartContainer(
   tokenOverride?: string,
   usernameOverride?: string,
 ): Promise<ApiResult<ContainerStopResponse>> {
-  return callContainerApi('RestartContainer', API_URLS.RestartContainer, 'POST', tokenOverride, usernameOverride)
+  return callContainerApi(
+    'RestartContainer',
+    API_URLS.RestartContainer,
+    'POST',
+    tokenOverride,
+    usernameOverride,
+  )
 }
 
 // 移除容器
@@ -121,7 +141,13 @@ export async function RemoveContainer(
   tokenOverride?: string,
   usernameOverride?: string,
 ): Promise<ApiResult<ContainerStopResponse>> {
-  return callContainerApi('RemoveContainer', API_URLS.RemoveContainer, 'DELETE', tokenOverride, usernameOverride)
+  return callContainerApi(
+    'RemoveContainer',
+    API_URLS.RemoveContainer,
+    'DELETE',
+    tokenOverride,
+    usernameOverride,
+  )
 }
 
 // 获取容器日志
@@ -129,7 +155,13 @@ export async function GetContainerLogs(
   tokenOverride?: string,
   usernameOverride?: string,
 ): Promise<ApiResult<ContainerLogsResponse>> {
-  return callContainerApi('GetContainerLogs', API_URLS.GetContainerLogs, 'GET', tokenOverride, usernameOverride)
+  return callContainerApi(
+    'GetContainerLogs',
+    API_URLS.GetContainerLogs,
+    'GET',
+    tokenOverride,
+    usernameOverride,
+  )
 }
 
 // 获取容器状态
@@ -137,11 +169,19 @@ export async function GetContainerStatus(
   tokenOverride?: string,
   usernameOverride?: string,
 ): Promise<ApiResult<ContainerStatusResponse>> {
-  return callContainerApi('GetContainerStatus', API_URLS.GetContainerStatus, 'GET', tokenOverride, usernameOverride)
+  return callContainerApi(
+    'GetContainerStatus',
+    API_URLS.GetContainerStatus,
+    'GET',
+    tokenOverride,
+    usernameOverride,
+  )
 }
 
 // 列出所有容器（无需认证）
-export async function ListContainers(): Promise<ApiResult<ContainerListResponse>> {
+export async function ListContainers(): Promise<
+  ApiResult<ContainerListResponse>
+> {
   const log = createLogger('Watchtower/index.ts', 'ListContainers')
   let error: string | undefined
   try {
