@@ -34,6 +34,8 @@
 
   /* ---- 表格 ---- */
   --table-stripe: rgba(255, 255, 255, 0.02);
+  /* 表头背景：不透明，保证吸顶时遮挡下方滚动数据 */
+  --table-header-bg: #1b1f27;
 
   /* ---- 阴影 ---- */
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
@@ -119,6 +121,8 @@
 
   --border: rgba(0, 0, 0, 0.08);
   --table-stripe: rgba(0, 0, 0, 0.02);
+  /* 表头背景：不透明，保证吸顶时遮挡下方滚动数据 */
+  --table-header-bg: #f3f4f6;
 
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
   --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.08);

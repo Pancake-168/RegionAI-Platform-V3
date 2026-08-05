@@ -852,7 +852,7 @@ watch(
 
 /* 表头 */
 .dataTable th {
-  background: var(--input-bg); /* 输入框背景 */
+  background: var(--table-header-bg); /* 不透明表头背景，吸顶时遮挡下方滚动数据 */
   position: sticky; /* 粘性定位 */
   top: 0; /* 顶部吸顶 */
   font-weight: 600; /* 加粗 */
