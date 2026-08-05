@@ -4,6 +4,7 @@
 
 use regex::Regex; // 正则匹配指纹文本 "regionai platform API on :{port}"
 use serde::Serialize; // 返回值的 serde JSON 序列化
+use std::collections::HashSet; // 有网关接口 IP 集合：去重存储
 use std::net::Ipv4Addr; // IPv4 地址类型
 use std::sync::atomic::{AtomicBool, Ordering}; // AtomicBool：跨 spawn 的全局中止标志
 use std::sync::Arc; // 跨 spawn 共享引用计数指针
@@ -67,12 +68,62 @@ fn is_private_ip(octets: &[u8; 4]) -> bool {
     false
 }
 
+/// 通过系统命令解析"有网关的接口 IP"集合
+/// 统计 route print -4 中网关列为真实 IPv4（非 0.0.0.0、非 on-link/在链路上）的路由行，
+/// 取其"接口"列 IP 作为"有网关"的判定依据。
+fn collect_gateway_interface_ips() -> HashSet<String> {
+    let mut gateway_ips: HashSet<String> = HashSet::new(); // 去重集合
+
+    // 仅 Windows 支持 route print；其它平台无法可靠解析网关，返回空（此时不启用网关过滤）
+    #[cfg(target_os = "windows")]
+    {
+        let output = std::process::Command::new("route")
+            .arg("print")
+            .arg("-4")
+            .output();
+        let text = match output {
+            Ok(o) => String::from_utf8_lossy(&o.stdout).to_string(),
+            Err(e) => {
+                log_warn(&format!("route print 执行失败，本次不启用网关过滤: {}", e));
+                return gateway_ips;
+            }
+        };
+        log_info(&format!("route print -4 输出共 {} 行", text.lines().count()));
+        // 逐行解析路由表：5 列分别为 dest、mask、gateway、interface、metric
+        for line in text.lines() {
+            let cols: Vec<&str> = line.split_whitespace().collect();
+            if cols.len() < 5 {
+                continue; // 非路由数据行（表头/分隔线等）跳过
+            }
+            let gateway = cols[2]; // 网关列
+            let iface = cols[3]; // 接口列（接口 IP）
+            // 网关必须是真实 IPv4（on-link/在链路上等文本会解析失败）
+            let is_ip = gateway.parse::<Ipv4Addr>().is_ok();
+            if is_ip && gateway != "0.0.0.0" {
+                gateway_ips.insert(iface.to_string()); // 记录该接口为有网关
+            }
+        }
+        // 打印解析出的有网关接口，便于核对网关过滤结果
+        log_info(&format!("解析出有网关的接口 IP 集合: {:?}", gateway_ips));
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        log_warn("非 Windows 平台不启用网关过滤");
+    }
+
+    gateway_ips
+}
+
 /// 一个待扫描的 /24 网段前缀（如 "192.168.10"）
 type SubnetPrefix = String;
 
 /// 遍历本机所有网卡，读真实 netmask，计算私网 /24 前缀列表
 fn collect_subnet_prefixes() -> Vec<SubnetPrefix> {
     let mut prefixes: Vec<SubnetPrefix> = Vec::new(); // 去重列表
+
+    // 解析"有网关的接口 IP"集合：仅 IPv4、网关、掩码同时存在的接口才纳入扫描范围
+    let gateway_ips = collect_gateway_interface_ips();
 
     // 获取所有网络接口
     let interfaces = match get_if_addrs::get_if_addrs() {
@@ -90,12 +141,34 @@ fn collect_subnet_prefixes() -> Vec<SubnetPrefix> {
             get_if_addrs::IfAddr::V4(v4) => (v4.ip, v4.netmask), // 解构 IPv4 地址和掩码
             _ => continue, // 跳过 IPv6
         };
+        // 记录接口基本信息，便于排查为何纳入/跳过扫描
+        log_info(&format!(
+            "检查接口 {}: ip={} mask={} 回环={} 私网={} 有网关={}",
+            iface.name,
+            ip,
+            netmask,
+            ip.is_loopback(),
+            is_private_ip(&ip.octets()),
+            gateway_ips.contains(&ip.to_string())
+        ));
         // 跳过回环地址
         if ip.is_loopback() {
+            log_info(&format!("跳过回环接口: {}", ip));
             continue;
         }
         // 只扫描私网 IP
         if !is_private_ip(&ip.octets()) {
+            log_info(&format!("跳过非私网接口: {}", ip));
+            continue;
+        }
+        // 掩码必须有效（非 0.0.0.0），否则视为缺掩码跳过
+        if u32::from(netmask) == 0 {
+            log_warn(&format!("跳过无有效掩码接口: {}", ip));
+            continue;
+        }
+        // 接口必须有网关（route print 存在真实网关路由）；解析失败为空时不启用该过滤
+        if !gateway_ips.is_empty() && !gateway_ips.contains(&ip.to_string()) {
+            log_warn(&format!("跳过无网关接口: {}", ip));
             continue;
         }
 
@@ -133,8 +206,10 @@ fn collect_subnet_prefixes() -> Vec<SubnetPrefix> {
         ));
     }
 
+    // 汇总最终纳入扫描的 /24 子网列表，便于核对扫描范围
+    log_info(&format!("最终纳入扫描的子网前缀: {:?}", prefixes));
     if prefixes.is_empty() {
-        log_warn("未发现私网接口，扫描列表为空");
+        log_warn("未发现可扫描子网，扫描列表为空");
     }
 
     prefixes
@@ -190,7 +265,18 @@ async fn scan_slash_24(
                 .await
             {
                 Ok(r) => r,
-                Err(_) => return, // 超时/连接失败 → 跳过
+                Err(e) => {
+                    // 记录请求失败原因（区分超时/连接失败/其它），排查为何扫不到目标
+                    let reason = if e.is_timeout() {
+                        "timeout"
+                    } else if e.is_connect() {
+                        "connect"
+                    } else {
+                        "other"
+                    };
+                    log_info(&format!("  请求失败 ip={} 原因={} 错误={}", ip, reason, e));
+                    return;
+                }
             };
             let body = match resp.text().await {
                 Ok(b) => b,
@@ -199,7 +285,12 @@ async fn scan_slash_24(
             // 指纹匹配
             let api_port = match re.captures(&body) {
                 Some(caps) => caps.get(1).unwrap().as_str().to_string(), // 捕获端口号
-                None => return, // 非目标服务
+                None => {
+                    // 记录：有 HTTP 响应但指纹不匹配（可能是其它服务或端口不对）
+                    let preview: String = body.chars().take(60).collect();
+                    log_info(&format!("  非目标服务 ip={} body前60字={:?}", ip, preview));
+                    return;
+                }
             };
 
             // === 第二步：调 /regionai/identify（独立超时） ===
@@ -211,7 +302,11 @@ async fn scan_slash_24(
                 .await
             {
                 Ok(r) => r,
-                Err(_) => return,
+                Err(e) => {
+                    // 记录：指纹已命中但 identify 请求失败
+                    log_info(&format!("  指纹命中但 identify 失败 ip={} 错误={}", ip, e));
+                    return;
+                }
             };
             let identify_body = match identify_resp.text().await {
                 Ok(b) => b,
@@ -224,6 +319,8 @@ async fn scan_slash_24(
             let db_port = parsed["db"].as_str().unwrap_or("").to_string();
             let im_port = parsed["im"].as_str().unwrap_or("").to_string();
             if db_port.is_empty() || im_port.is_empty() {
+                // 记录：identify 有返回但缺少 db/im 字段
+                log_info(&format!("  identify 返回缺 db/im 字段 ip={} body={}", ip, identify_body));
                 return;
             }
 
