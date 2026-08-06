@@ -9,6 +9,9 @@ use std::net::Ipv4Addr; // IPv4 地址类型
 use std::sync::atomic::{AtomicBool, Ordering}; // AtomicBool：跨 spawn 的全局中止标志
 use std::sync::Arc; // 跨 spawn 共享引用计数指针
 use tokio::sync::Semaphore; // 并发控制：令牌桶限流
+// Windows 专属：为子进程设置创建标志（CREATE_NO_WINDOW），防止 GUI 父进程 spawn 控制台程序时闪现黑窗口
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
 
 // ============================================================================
 // 返回类型
@@ -80,6 +83,8 @@ fn collect_gateway_interface_ips() -> HashSet<String> {
         let output = std::process::Command::new("route")
             .arg("print")
             .arg("-4")
+            // GUI 父进程下 spawn 控制台子进程默认会闪黑窗口，加 CREATE_NO_WINDOW(0x08000000) 隐藏
+            .creation_flags(0x08000000)
             .output();
         let text = match output {
             Ok(o) => String::from_utf8_lossy(&o.stdout).to_string(),
