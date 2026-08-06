@@ -177,7 +177,8 @@ fn collect_subnet_prefixes() -> Vec<SubnetPrefix> {
         let mask_u32 = u32::from(netmask); // 掩码 → u32
         let network_u32 = ip_u32 & mask_u32; // 网络地址 = IP & mask
         let broadcast_u32 = network_u32 | !mask_u32; // 广播地址 = network | ~mask
-        let host_count = broadcast_u32.saturating_sub(network_u32).saturating_sub(1); // 可用 host 数
+        // 可用 host 数（不减 1，与 Electron 端一致，覆盖到 .255 广播地址）
+        let host_count = broadcast_u32.saturating_sub(network_u32);
         // 限制最大扫描范围
         let host_count = host_count.min(65535);
 
@@ -227,14 +228,14 @@ async fn scan_slash_24(
     fingerprint_re: &Regex, // 预编译指纹正则
     abort: &Arc<AtomicBool>, // 全局中止标志：true 表示已发现，所有任务应停止
 ) -> Option<DiscoveredServer> {
-    log_info(&format!("开始扫描子网 {}.x 共 254 个 IP", prefix));
+    log_info(&format!("开始扫描子网 {}.x 共 255 个 IP", prefix));
     // 共享结果容器：Arc + tokio::sync::Mutex，第一个发现的写入
     let found: Arc<tokio::sync::Mutex<Option<DiscoveredServer>>> =
         Arc::new(tokio::sync::Mutex::new(None));
 
-    let mut handles = Vec::with_capacity(254); // 预分配
+    let mut handles = Vec::with_capacity(255); // 预分配
 
-    for host in 1u8..=254 {
+    for host in 1u8..=255 {
         // 每个 spawn 前检查 abort 标志
         if abort.load(Ordering::Relaxed) {
             break; // 已发现，不再创建新任务
