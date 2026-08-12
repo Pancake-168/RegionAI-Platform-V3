@@ -33,8 +33,8 @@ pub struct DiscoveredServer {
 // 常量
 // ============================================================================
 
-const SCAN_TIMEOUT_MS: u64 = 800; // 单请求超时毫秒数
-const IDENTIFY_TIMEOUT_MS: u64 = 800; // identify 请求超时
+const SCAN_TIMEOUT_MS: u64 = 2000; // 单请求超时毫秒数（实测目标服务器响应可达 833ms，原 800ms 过紧导致扫描超时扫不到）
+const IDENTIFY_TIMEOUT_MS: u64 = 2000; // identify 请求超时
 const MAX_CONCURRENT: usize = 30; // 最大并发连接数
 /// 指纹正则模式
 const FINGERPRINT_PATTERN: &str = r"regionai platform API on :(\d+)";

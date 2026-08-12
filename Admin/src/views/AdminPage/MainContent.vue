@@ -88,6 +88,23 @@ const botUsernames = ref<Set<string>>(new Set())
 const containerStatuses = ref<Record<string, string>>({})
 
 // =====================
+// 批量启动 Bot 容器状态
+// =====================
+
+// 批量启动弹窗是否打开
+const batchStartOpen = ref<boolean>(false)
+// 批量启动是否正在执行中
+const batchStarting = ref<boolean>(false)
+// 批量重启是否正在执行中
+const batchRestarting = ref<boolean>(false)
+// 弹窗内勾选中的 bot username 集合（默认全选）
+const selectedBotUsernames = ref<Set<string>>(new Set())
+// 批量操作执行结果：每个 bot 一条，记录成功与否及错误信息
+const batchResults = ref<
+  Array<{ username: string; ok: boolean; error?: string }>
+>([])
+
+// =====================
 // 三级缓存 + 三级 inFlight 去重
 // =====================
 
@@ -166,6 +183,28 @@ const isOtherAppUsersTable = computed<boolean>(
   () =>
     selectedCollection.value === 'users' &&
     props.selectedApp?.name !== 'A_SYSTEM_APPLICATION',
+)
+
+// 当前组织 users 表内的所有 bot 行（username 属于 botUsernames 集合的即为 bot）
+const orgBotRows = computed<Array<Record<string, unknown>>>(() =>
+  rows.value.filter((row) =>
+    botUsernames.value.has(String(row.username ?? '')),
+  ),
+)
+
+// 批量启动成功数
+const batchOkCount = computed<number>(
+  () => batchResults.value.filter((r) => r.ok).length,
+)
+// 批量启动失败数
+const batchFailCount = computed<number>(
+  () => batchResults.value.length - batchOkCount.value,
+)
+// 是否已全部勾选（用于全选/取消全选按钮文案）
+const batchAllSelected = computed<boolean>(
+  () =>
+    orgBotRows.value.length > 0 &&
+    selectedBotUsernames.value.size === orgBotRows.value.length,
 )
 
 // collections 的 Select 选项（仅渲染 users 表）
@@ -466,6 +505,156 @@ async function refreshContainerStatuses() {
 }
 
 // =====================
+// 批量启动 Bot 容器
+// =====================
+
+// 打开批量启动弹窗：默认把当前组织内所有 bot 全部勾选上
+function openBatchStartDialog(): void {
+  // 清空上一次的结果
+  batchResults.value = []
+  // 默认全选：把当前组织内所有 bot 的 username 加入选中集合
+  selectedBotUsernames.value = new Set(
+    orgBotRows.value.map((row) => String(row.username ?? '')),
+  )
+  batchStartOpen.value = true
+  log.info('打开批量启动弹窗', { botCount: orgBotRows.value.length })
+}
+
+// 全选 / 取消全选
+function toggleBatchSelectAll(): void {
+  // 若当前已全选则清空，否则全选
+  if (batchAllSelected.value) {
+    selectedBotUsernames.value = new Set()
+  } else {
+    selectedBotUsernames.value = new Set(
+      orgBotRows.value.map((row) => String(row.username ?? '')),
+    )
+  }
+}
+
+// 切换单个 bot 的勾选状态
+function toggleBatchSelectBot(username: string): void {
+  const next = new Set(selectedBotUsernames.value)
+  // 已选中则移除，否则加入
+  if (next.has(username)) {
+    next.delete(username)
+  } else {
+    next.add(username)
+  }
+  selectedBotUsernames.value = next
+}
+
+// 取 bot 行的展示名：优先 nickname（对人友好），缺失时回退 username
+function botDisplayName(row: Record<string, unknown>): string {
+  const nick = String(row.nickname ?? '').trim()
+  return nick || String(row.username ?? '')
+}
+
+// 通过 username 反查展示名（结果明细行只有 username，需回查 orgBotRows）
+function botDisplayNameByUsername(username: string): string {
+  const row = orgBotRows.value.find(
+    (r) => String(r.username ?? '') === username,
+  )
+  return row ? botDisplayName(row) : username
+}
+
+// 并发启动选中的 bot 容器，返回汇总结果
+async function handleBatchStart(): Promise<void> {
+  const targets = [...selectedBotUsernames.value]
+  if (!targets.length) return
+  batchStarting.value = true
+  // 清空上一次的结果
+  batchResults.value = []
+  log.info('开始批量启动', { count: targets.length })
+
+  // 并发执行：对每个 bot 先取 token，再调启动容器接口
+  const tasks = targets.map(async (username) => {
+    // 获取该 bot 自己的 token
+    const tokenRes = await getTokenByUsername(username)
+    if (!tokenRes.ok) {
+      return { username, ok: false, error: tokenRes.error || '获取 token 失败' }
+    }
+    // 调用 Watchtower 启动容器接口
+    const res = await StartContainer(tokenRes.data, username)
+    // 按 ok 分支收窄：成功分支无 error，失败分支才有 error
+    return res.ok
+      ? { username, ok: true }
+      : { username, ok: false, error: res.error }
+  })
+
+  // 等待全部并发完成
+  const results = await Promise.all(tasks)
+  batchResults.value = results
+  batchStarting.value = false
+  log.info('批量启动完成', {
+    ok: results.filter((r) => r.ok).length,
+    fail: results.filter((r) => !r.ok).length,
+  })
+
+  // 汇总 toast 提示
+  const okCount = results.filter((r) => r.ok).length
+  const failCount = results.length - okCount
+  if (failCount === 0) {
+    toast(`已启动 ${okCount} 个 Bot 容器`, 'success')
+  } else if (okCount === 0) {
+    toast(`启动失败 ${failCount} 个 Bot 容器`, 'error')
+  } else {
+    toast(`启动完成：成功 ${okCount} 个，失败 ${failCount} 个`, 'warn')
+  }
+
+  // 稍后刷新容器状态
+  setTimeout(refreshContainerStatuses, 1500)
+}
+
+// 并发重启选中的 bot 容器（复用同一弹窗与勾选集合），返回汇总结果
+async function handleBatchRestart(): Promise<void> {
+  const targets = [...selectedBotUsernames.value]
+  if (!targets.length) return
+  batchRestarting.value = true
+  // 清空上一次的结果
+  batchResults.value = []
+  log.info('开始批量重启', { count: targets.length })
+
+  // 并发执行：对每个 bot 先取 token，再调重启容器接口
+  const tasks = targets.map(async (username) => {
+    // 获取该 bot 自己的 token
+    const tokenRes = await getTokenByUsername(username)
+    if (!tokenRes.ok) {
+      return { username, ok: false, error: tokenRes.error || '获取 token 失败' }
+    }
+    // 调用 Watchtower 重启容器接口（只对已启动的容器生效，未启动的会返回 404）
+    const res = await RestartContainer(tokenRes.data, username)
+    // 按 ok 分支收窄：成功分支无 error，失败分支才有 error
+    return res.ok
+      ? { username, ok: true }
+      : { username, ok: false, error: res.error }
+  })
+
+  // 等待全部并发完成
+  const results = await Promise.all(tasks)
+  batchResults.value = results
+  batchRestarting.value = false
+  log.info('批量重启完成', {
+    ok: results.filter((r) => r.ok).length,
+    fail: results.filter((r) => !r.ok).length,
+  })
+
+  // 汇总 toast 提示
+  const okCount = results.filter((r) => r.ok).length
+  const failCount = results.length - okCount
+  if (failCount === 0) {
+    toast(`已重启 ${okCount} 个 Bot 容器`, 'success')
+  } else if (okCount === 0) {
+    toast(`重启失败 ${failCount} 个 Bot 容器`, 'error')
+  } else {
+    toast(`重启完成：成功 ${okCount} 个，失败 ${failCount} 个`, 'warn')
+  }
+
+  // 稍后刷新容器状态
+  setTimeout(refreshContainerStatuses, 1500)
+}
+
+// =====================
 // Watchers：选中子应用变化 → 获取子应用探测数据
 // =====================
 
@@ -602,6 +791,20 @@ watch(
 
       <!-- 刷新按钮 -->
       <Button variant="subtle" @click="refresh">刷新数据</Button>
+
+      <!-- 批量启动 Bot 按钮：仅在该组织 users 表且有 bot 时显示 -->
+      <Button
+        v-if="isOtherAppUsersTable && orgBotRows.length"
+        variant="secondary"
+        @click="openBatchStartDialog"
+      >
+        <template #icon>
+          <IconContainer :size="14">
+            <Icon icon="codicon:debug-start" :width="14" />
+          </IconContainer>
+        </template>
+        启动 Bot ({{ orgBotRows.length }})
+      </Button>
 
       <!-- 注册按钮 -->
       <Button variant="primary" @click="openRegisterDialog">注册</Button>
@@ -782,6 +985,105 @@ watch(
       </Button>
     </div>
   </Dialog>
+
+  <!-- ===================== -->
+  <!-- 批量启动 Bot 容器弹窗 -->
+  <!-- ===================== -->
+  <Dialog
+    :open="batchStartOpen"
+    title="一键启动 Bot 容器"
+    :description="`当前组织共 ${orgBotRows.length} 个 Bot，默认已全部勾选`"
+    @update:open="batchStartOpen = $event"
+  >
+    <div class="batchDialog">
+      <!-- 顶部操作栏：全选/取消全选 + 已选计数 -->
+      <div class="batchBar">
+        <Button variant="subtle" @click="toggleBatchSelectAll">
+          {{ batchAllSelected ? '取消全选' : '全选' }}
+        </Button>
+        <span class="batchCount"
+          >已选 {{ selectedBotUsernames.size }} / {{ orgBotRows.length }}</span
+        >
+      </div>
+
+      <!-- Bot 多选列表 -->
+      <ScrollArea :max-height="260">
+        <div class="botList">
+          <label
+            v-for="row in orgBotRows"
+            :key="String(row.username)"
+            class="botRow"
+          >
+            <input
+              type="checkbox"
+              class="botCheck"
+              :checked="selectedBotUsernames.has(String(row.username))"
+              @change="toggleBatchSelectBot(String(row.username))"
+            />
+            <span class="botName">{{ botDisplayName(row) }}</span>
+            <span
+              v-if="containerStatuses[String(row.username)]"
+              class="pill"
+              :class="
+                containerStatuses[String(row.username)] === 'running'
+                  ? 'success'
+                  : 'error'
+              "
+            >
+              {{ containerStatuses[String(row.username)] }}
+            </span>
+          </label>
+        </div>
+      </ScrollArea>
+
+      <!-- 汇总结果 -->
+      <div v-if="batchResults.length" class="batchSummary">
+        <div class="summaryLine">
+          成功
+          <span class="okText">{{ batchOkCount }}</span>
+          个，失败
+          <span class="failText">{{ batchFailCount }}</span>
+          个
+        </div>
+        <div class="resultList">
+          <div v-for="r in batchResults" :key="r.username" class="resultRow">
+            <span :class="r.ok ? 'okText' : 'failText'">{{
+              r.ok ? '✓' : '✗'
+            }}</span>
+            <span class="resultName">{{
+              botDisplayNameByUsername(r.username)
+            }}</span>
+            <span v-if="!r.ok" class="resultErr">{{
+              r.error || '启动失败'
+            }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 底部操作 -->
+      <div class="batchFooter">
+        <Button variant="subtle" @click="batchStartOpen = false">取消</Button>
+        <Button
+          variant="secondary"
+          :disabled="!selectedBotUsernames.size"
+          :loading="batchRestarting"
+          loading-text="重启中..."
+          @click="handleBatchRestart"
+        >
+          重启选中 ({{ selectedBotUsernames.size }})
+        </Button>
+        <Button
+          variant="primary"
+          :disabled="!selectedBotUsernames.size"
+          :loading="batchStarting"
+          loading-text="启动中..."
+          @click="handleBatchStart"
+        >
+          启动选中 ({{ selectedBotUsernames.size }})
+        </Button>
+      </div>
+    </div>
+  </Dialog>
 </template>
 
 <style scoped>
@@ -852,7 +1154,9 @@ watch(
 
 /* 表头 */
 .dataTable th {
-  background: var(--table-header-bg); /* 不透明表头背景，吸顶时遮挡下方滚动数据 */
+  background: var(
+    --table-header-bg
+  ); /* 不透明表头背景，吸顶时遮挡下方滚动数据 */
   position: sticky; /* 粘性定位 */
   top: 0; /* 顶部吸顶 */
   font-weight: 600; /* 加粗 */
@@ -964,5 +1268,133 @@ watch(
 
 .logWrapper {
   min-width: 800px;
+}
+
+/* ===================== */
+/* 批量启动 Bot 容器弹窗 */
+/* ===================== */
+
+/* 弹窗内容体：纵向布局 */
+.batchDialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  min-width: 420px;
+}
+
+/* 顶部操作栏：横向排列，间距 */
+.batchBar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+/* 已选计数文字 */
+.batchCount {
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+/* Bot 多选列表 */
+.botList {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--glass-brd);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+/* 单个 Bot 行 */
+.botRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+/* Bot 行悬停高亮 */
+.botRow:hover {
+  background: rgba(var(--accent-rgb), 0.06);
+}
+
+/* 复选框 */
+.botCheck {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Bot 用户名 */
+.botName {
+  flex: 1;
+  font-size: var(--text-base);
+  color: var(--text);
+  font-family: var(--font-mono);
+}
+
+/* 汇总结果区 */
+.batchSummary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  border: 1px solid var(--glass-brd);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+}
+
+/* 汇总计数行 */
+.summaryLine {
+  font-size: var(--text-sm);
+  color: var(--text);
+}
+
+/* 成功文字 */
+.okText {
+  color: var(--color-success);
+  font-weight: 700;
+}
+
+/* 失败文字 */
+.failText {
+  color: var(--color-error);
+  font-weight: 700;
+}
+
+/* 结果明细列表 */
+.resultList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+/* 单条结果行 */
+.resultRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  font-size: var(--text-sm);
+}
+
+/* 结果中的用户名 */
+.resultName {
+  color: var(--text);
+  font-family: var(--font-mono);
+}
+
+/* 失败原因 */
+.resultErr {
+  color: var(--color-error);
+  font-size: var(--text-xs);
+}
+
+/* 底部操作栏 */
+.batchFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
 }
 </style>
