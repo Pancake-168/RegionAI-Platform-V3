@@ -62,6 +62,12 @@ class SystemStorage {
   // new room cache（三个 New API 的房间列表缓存，按用户隔离）
   private readonly fieldNewRoomCache = 'RegionAI-NewRoomCache'
 
+   // 记录用户登录过的目标 API 地址，仅在页面内点击退出登录时清除
+  private readonly keyServerPinnedTarget = 'RegionAI-Server-PinnedTarget'
+
+
+
+
   // 此函数用于规范化用户名输入，确保它们是字符串并去除首尾空白
   private normalizeUsername(username: string): string {
     return typeof username === 'string' ? username.trim() : ''
@@ -772,6 +778,19 @@ class SystemStorage {
   }
   async setServerNocobaseUrl(url: string): Promise<boolean> {
     return await setSetting(this.keyServerNocobaseUrl, url)
+  }
+
+
+
+  async getServerPinnedTarget(): Promise<string | null> {
+    const v = await getSetting<string>(this.keyServerPinnedTarget)
+    return v || null
+  }
+  async setServerPinnedTarget(url: string): Promise<boolean> {
+    return await setSetting(this.keyServerPinnedTarget, url)
+  }
+  async clearServerPinnedTarget(): Promise<boolean> {
+    return await removeSetting(this.keyServerPinnedTarget)
   }
 }
 

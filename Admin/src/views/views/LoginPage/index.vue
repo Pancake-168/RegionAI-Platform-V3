@@ -26,7 +26,7 @@
         </template>
       </div>
 
-      <!-- 区域 2：三个服务器地址输入框（v-show 控制可见性，齿轮开关） -->
+      <!-- 区域 2：API 服务器地址输入框（v-show 控制可见性，齿轮开关） -->
       <div v-show="showManualConfig" class="manual-config">
         <!-- API 后端地址 -->
         <div class="form-group">
@@ -34,25 +34,7 @@
             v-model="apiBaseUrl"
             placeholder="API 地址 (http://x.x.x.x:端口)"
             :error="apiBaseError"
-            @blur="validateAndPersist('api')"
-          />
-        </div>
-        <!-- IM / Matrix 服务器地址 -->
-        <div class="form-group">
-          <Input
-            v-model="matrixUrl"
-            placeholder="IM 地址 (http://x.x.x.x:端口)"
-            :error="matrixUrlError"
-            @blur="validateAndPersist('matrix')"
-          />
-        </div>
-        <!-- NocoBase / DB 服务器地址 -->
-        <div class="form-group">
-          <Input
-            v-model="nocobaseUrl"
-            placeholder="DB 地址 (http://x.x.x.x:端口)"
-            :error="nocobaseUrlError"
-            @blur="validateAndPersist('nocobase')"
+            @blur="handleApiBlur()"
           />
         </div>
       </div>
@@ -152,7 +134,9 @@ const { isDiscovering, discoveredServer, displayLabel, scanRound, startScan } =
       }
 
 // ===== 齿轮开关 =====
-const showManualConfig = ref(false) // false = 输入框隐藏，仅看扫描状态；true = 展开三输入框
+const showManualConfig = ref(false) // false = 输入框隐藏，仅看扫描状态；true = 展开 API 地址输入框
+const hasPinnedTarget = ref(false) // 是否已记录用户登录过的目标地址
+const hasClosedManualConfig = ref(false) // 用户关闭齿轮后，禁止扫描结果再覆盖
 
 /// 切换手动配置面板的展开/收折
 function toggleManualConfig() {
@@ -169,8 +153,6 @@ const apiBaseUrl = ref('') // API 后端地址：http://{ip}:{apiPort}
 const matrixUrl = ref('') // IM/Matrix 地址：http://{ip}:{imPort}
 const nocobaseUrl = ref('') // NocoBase/DB 地址：http://{ip}:{dbPort}
 const apiBaseError = ref('') // API 地址校验错误文本
-const matrixUrlError = ref('') // Matrix 地址校验错误文本
-const nocobaseUrlError = ref('') // NocoBase 地址校验错误文本
 
 // ===== 登录凭据 =====
 const username = ref('') // NocoBase 账号
@@ -180,9 +162,11 @@ const isLoggingIn = ref(false) // 登录中标记：控制按钮 loading 和禁�
 
 // ===== computed =====
 
-/// 登录按钮是否可点击：NocoBase 地址 + 账号 + 密码缺一不可
+/// 登录按钮是否可点击：API 地址推导出的 Matrix/NocoBase 地址 + 账号 + 密码缺一不可
 const canLogin = computed(() => {
   return (
+    apiBaseUrl.value.trim() !== '' &&
+    matrixUrl.value.trim() !== '' &&
     nocobaseUrl.value.trim() !== '' &&
     username.value.trim() !== '' &&
     password.value.trim() !== ''
@@ -191,31 +175,39 @@ const canLogin = computed(() => {
 
 // ===== 服务器地址持久化 =====
 
-/// 校验并持久化单个地址字段
-function validateAndPersist(field: 'api' | 'matrix' | 'nocobase' | 'all') {
-  if (field === 'all') {
-    apiBaseError.value = validateUrl(apiBaseUrl.value)
-      ? ''
-      : '请输入有效的服务器地址'
-    void persistServerUrls()
+/// 根据 API 地址调用 identify 推导 Matrix/NocoBase 地址
+async function deriveServerUrls(): Promise<boolean> {
+  if (!isTauriRuntime || !validateUrl(apiBaseUrl.value)) return false
+  try {
+    const data = await invoke<{ db?: string; im?: string }>(
+      'identify_server',
+      { apiUrl: apiBaseUrl.value },
+    )
+    if (data?.db && data?.im) {
+      const origin = new URL(apiBaseUrl.value).origin.replace(/:\d+$/, '')
+      nocobaseUrl.value = `${origin}:${data.db}`
+      matrixUrl.value = `${origin}:${data.im}`
+      return true
+    }
+  } catch (e) {
+    console.warn('[LoginPage] identify 失败', e)
+  }
+  return false
+}
+
+/// API 地址失焦处理：校验、推导并持久化
+async function handleApiBlur() {
+  if (!validateUrl(apiBaseUrl.value)) {
+    apiBaseError.value = '请输入有效的服务器地址（需包含 http://）'
     return
   }
-  // 根据字段名选择对应的 ref 和 error ref
-  if (field === 'api') {
-    apiBaseError.value = validateUrl(apiBaseUrl.value)
-      ? ''
-      : '请输入有效的服务器地址（需包含 http://）'
-  } else if (field === 'matrix') {
-    matrixUrlError.value = validateUrl(matrixUrl.value)
-      ? ''
-      : '请输入有效的服务器地址（需包含 http://）'
-  } else {
-    nocobaseUrlError.value = validateUrl(nocobaseUrl.value)
-      ? ''
-      : '请输入有效的服务器地址（需包含 http://）'
+  const ok = await deriveServerUrls()
+  if (!ok) {
+    apiBaseError.value = '无法从 API 地址推导出 Matrix/NocoBase 地址，请检查 API 地址'
+    return
   }
-  // 三个地址均合法时持久化（异步写存储，异常由 setSetting 内部 catch）
-  void persistServerUrls()
+  apiBaseError.value = ''
+  await persistServerUrls()
 }
 
 /// 将三个地址写入 localStorage 持久化（键名与 Electron 版 SystemStorage 一致）
@@ -238,14 +230,6 @@ async function persistServerUrls() {
 
 // ===== 竞态保护：双 watch =====
 
-/// 判断用户是否已手动输入了三个地址
-function hasManualInput(): boolean {
-  return (
-    apiBaseUrl.value !== '' &&
-    matrixUrl.value !== '' &&
-    nocobaseUrl.value !== ''
-  )
-}
 
 /// 将扫描到的服务器地址填入三个输入框
 function applyServer(server: DiscoveredServer) {
@@ -263,33 +247,22 @@ function applyServer(server: DiscoveredServer) {
 
 if (isTauriRuntime) {
   // watch 0：手动输入 API 地址时调 identify 获取后两个端口
-  watch(apiBaseUrl, async (val) => {
-    if (!validateUrl(val) || !showManualConfig.value) return
-    try {
-      const data = await invoke<{ db?: string; im?: string }>(
-        'identify_server',
-        { apiUrl: val },
-      )
-      const origin = new URL(val).origin.replace(/:\d+$/, '')
-      if (data.db) nocobaseUrl.value = `${origin}:${data.db}`
-      if (data.im) matrixUrl.value = `${origin}:${data.im}`
-      validateAndPersist('all')
-    } catch (e) {
-      console.warn('[LoginPage] identify 失败', e)
-    }
+  watch(apiBaseUrl, () => {
+    if (!showManualConfig.value) return
+    void deriveServerUrls()
   })
 
   // watch 1：discoveredServer 变化 → 齿轮未展开时自动 apply
   watch(discoveredServer, (server) => {
-    if (server && !showManualConfig.value) {
+    if (server && !showManualConfig.value && !hasPinnedTarget.value && !hasClosedManualConfig.value) {
       applyServer(server) // 直接填入
     }
   })
 
-  // watch 2：齿轮关闭 → 如果有未应用的搜索结果，补上
+  // watch 2：齿轮关闭后，禁止扫描结果再覆盖当前地址
   watch(showManualConfig, (nowOpen) => {
-    if (!nowOpen && discoveredServer.value && !hasManualInput()) {
-      applyServer(discoveredServer.value) // 补应用
+    if (!nowOpen) {
+      hasClosedManualConfig.value = true
     }
   })
 }
@@ -300,15 +273,18 @@ if (isTauriRuntime) {
 async function handleLogin() {
   // 防止重复提交
   if (isLoggingIn.value) return
-  // 登录前校验
-  if (!nocobaseUrl.value.trim()) {
-    errorMessage.value = '请等待自动扫描完成或手动输入服务器地址'
-    return
-  }
   if (!username.value.trim() || !password.value.trim()) {
     errorMessage.value = '请输入账号和密码'
     return
   }
+
+  // 登录前再次推导，确保 Matrix/NocoBase 地址与 API 地址一致
+  const derivedOk = await deriveServerUrls()
+  if (!derivedOk || !matrixUrl.value.trim() || !nocobaseUrl.value.trim()) {
+    errorMessage.value = '无法从 API 地址推导出 Matrix/NocoBase 地址，请检查 API 地址'
+    return
+  }
+  await persistServerUrls()
 
   errorMessage.value = '' // 清空之前的错误
   isLoggingIn.value = true // 进入 loading 状态
@@ -343,6 +319,8 @@ async function handleLogin() {
     // 将认证信息写入 Pinia store（供后续 API 调用使用）
     const authStore = useNocoBaseAuthStore() // 获取 store 实例
     authStore.setAuth(String(token), nocobaseApiUrl) // 存储 token 和 baseURL
+    // 记录用户登录过的目标 API 地址，后续优先使用且禁止被扫描覆盖
+    await SystemStorageManager.setServerPinnedTarget(apiBaseUrl.value)
 
     loginLog.info('登录成功，即将跳转', { url: nocobaseApiUrl })
 
@@ -367,6 +345,15 @@ onMounted(async () => {
   if (savedApi) apiBaseUrl.value = savedApi // 恢复
   if (savedMatrix) matrixUrl.value = savedMatrix // 恢复
   if (savedNoco) nocobaseUrl.value = savedNoco // 恢复
+
+  // 2. 如果用户登录过一次并记录了目标地址，优先使用该地址，禁止被扫描覆盖
+  const pinnedTarget = await SystemStorageManager.getServerPinnedTarget()
+  if (pinnedTarget && validateUrl(pinnedTarget)) {
+    hasPinnedTarget.value = true
+    apiBaseUrl.value = pinnedTarget
+    await deriveServerUrls()
+    await persistServerUrls()
+  }
 
   // 2. 启动局域网自动扫描（非 Tauri 环境为空函数）
   startScan()
