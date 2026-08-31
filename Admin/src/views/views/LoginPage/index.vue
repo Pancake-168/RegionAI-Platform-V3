@@ -181,10 +181,9 @@ const canLogin = computed(() => {
 async function deriveServerUrls(): Promise<boolean> {
   if (!isTauriRuntime || !validateUrl(apiBaseUrl.value)) return false
   try {
-    const data = await invoke<{ db?: string; im?: string }>(
-      'identify_server',
-      { apiUrl: apiBaseUrl.value },
-    )
+    const data = await invoke<{ db?: string; im?: string }>('identify_server', {
+      apiUrl: apiBaseUrl.value,
+    })
     if (data?.db && data?.im) {
       const origin = new URL(apiBaseUrl.value).origin.replace(/:\d+$/, '')
       nocobaseUrl.value = `${origin}:${data.db}`
@@ -205,7 +204,8 @@ async function handleApiBlur() {
   }
   const ok = await deriveServerUrls()
   if (!ok) {
-    apiBaseError.value = '无法从 API 地址推导出 Matrix/NocoBase 地址，请检查 API 地址'
+    apiBaseError.value =
+      '无法从 API 地址推导出 Matrix/NocoBase 地址，请检查 API 地址'
     return
   }
   apiBaseError.value = ''
@@ -232,7 +232,6 @@ async function persistServerUrls() {
 
 // ===== 竞态保护：双 watch =====
 
-
 /// 将扫描到的服务器地址填入三个输入框
 function applyServer(server: DiscoveredServer) {
   apiBaseUrl.value = `http://${server.ip}:${server.apiPort}` // API 地址
@@ -256,7 +255,12 @@ if (isTauriRuntime) {
 
   // watch 1：discoveredServer 变化 → 齿轮未展开时自动 apply
   watch(discoveredServer, (server) => {
-    if (server && !showManualConfig.value && !hasPinnedTarget.value && !hasClosedManualConfig.value) {
+    if (
+      server &&
+      !showManualConfig.value &&
+      !hasPinnedTarget.value &&
+      !hasClosedManualConfig.value
+    ) {
       applyServer(server) // 直接填入
     }
   })
@@ -283,7 +287,8 @@ async function handleLogin() {
   // 登录前再次推导，确保 Matrix/NocoBase 地址与 API 地址一致
   const derivedOk = await deriveServerUrls()
   if (!derivedOk || !matrixUrl.value.trim() || !nocobaseUrl.value.trim()) {
-    errorMessage.value = '无法从 API 地址推导出 Matrix/NocoBase 地址，请检查 API 地址'
+    errorMessage.value =
+      '无法从 API 地址推导出 Matrix/NocoBase 地址，请检查 API 地址'
     return
   }
   await persistServerUrls()
