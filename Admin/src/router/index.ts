@@ -17,7 +17,7 @@ const router = createRouter({
     {
       path: '/login', // 登录页路由
       name: 'Login',
-      component: () => import('@/views/views/LoginPage/index.vue'), // 懒加载 LoginPage
+      component: () => import('@/views/views/Login/index.vue'), // 懒加载 Login 父级（if/else 切换）
     },
     {
       path: '/demo', // 首页路由

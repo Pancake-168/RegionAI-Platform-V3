@@ -77,7 +77,9 @@
       @click="toggleManualConfig"
     >
       <template #icon>
-        <Icon icon="codicon:settings-gear" :width="18" />
+        <IconContainer :size="18" shape="rounded">
+          <Icon icon="codicon:settings-gear" :width="18" />
+        </IconContainer>
       </template>
     </Button>
   </div>
@@ -89,7 +91,7 @@ import { ref, computed, watch, onMounted } from 'vue' // Vue 核心：ref 响应
 import { useRouter } from 'vue-router' // Vue Router：登录成功后跳转
 import { invoke } from '@tauri-apps/api/core' // Tauri IPC
 import { Icon } from '@iconify/vue' // 图标组件：齿轮 SVG（codicon 图标集）
-import { Input, Button } from '@/components/common' // 项目通用组件：§3 Input 输入框、§1 Button 按钮
+import { Input, Button, IconContainer } from '@/components/common' // 项目通用组件：§3 Input 输入框、§1 Button 按钮
 import { createLogger } from '@/utils/logger' // 日志系统：按文件名+函数名创建 logger
 import { isTauri } from '@/utils/isTauri' // Tauri 运行时检测
 import { useServerDiscovery } from '@/composables/useServerDiscovery' // 局域网扫描 composable
