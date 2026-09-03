@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
+import IconContainer from './IconContainer.vue'
+import { getIcon } from '@/icons'
+import styles from './EmptyState.module.css'
 
 defineProps<{
   title: string
@@ -8,40 +11,21 @@ defineProps<{
 </script>
 
 <template>
-  <div
-    :style="{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 'var(--spacing-md)',
-      padding: 'var(--spacing-2xl)',
-      border: '1px dashed var(--glass-brd)',
-      borderRadius: 'var(--radius-xl)',
-      textAlign: 'center',
-    }"
-  >
-    <div :style="{ color: 'var(--muted)', fontSize: '48px', lineHeight: '1' }">
+  <div :class="styles.root">
+    <div :class="styles.icon">
       <slot name="icon">
-        <Icon icon="codicon:folder-opened" :width="48" />
+        <IconContainer :size="48"
+          ><Icon :icon="getIcon('folderOpened')" :width="48"
+        /></IconContainer>
       </slot>
     </div>
-    <span
-      :style="{
-        color: 'var(--text)',
-        fontWeight: '600',
-        fontSize: 'var(--text-md)',
-      }"
-    >
+    <span :class="styles.title">
       {{ title }}
     </span>
-    <span
-      v-if="description"
-      :style="{ color: 'var(--muted)', fontSize: 'var(--text-sm)' }"
-    >
+    <span v-if="description" :class="styles.description">
       {{ description }}
     </span>
-    <div v-if="$slots.action" :style="{ marginTop: 'var(--spacing-sm)' }">
+    <div v-if="$slots.action" :class="styles.action">
       <slot name="action" />
     </div>
   </div>

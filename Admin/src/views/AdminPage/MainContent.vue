@@ -7,6 +7,7 @@ import { Icon } from '@iconify/vue'
 import { createLogger } from '@/utils/logger' // 项目日志体系
 import {
   Button,
+  Checkbox,
   Confirm,
   ContextMenu,
   Dialog,
@@ -36,6 +37,7 @@ import {
   RestartContainer,
   GetContainerLogs,
 } from '@/services/Project/Watchtower'
+import { getIcon } from '@/icons'
 
 // 创建 logger 实例
 const log = createLogger('MainContent.vue', 'MainContent')
@@ -401,21 +403,21 @@ const botMenuItems = (row: Record<string, unknown>): MenuItem[] => [
   {
     label: '启动',
     icon: h(IconContainer, { size: 14 }, () =>
-      h(Icon, { icon: 'codicon:debug-start', width: 14 }),
+      h(Icon, { icon: getIcon('debugStart'), width: 14 }),
     ),
     onClick: () => openConfirm('start', row),
   },
   {
     label: '停止',
     icon: h(IconContainer, { size: 14 }, () =>
-      h(Icon, { icon: 'codicon:debug-stop', width: 14 }),
+      h(Icon, { icon: getIcon('debugStop'), width: 14 }),
     ),
     onClick: () => openConfirm('stop', row),
   },
   {
     label: '重启',
     icon: h(IconContainer, { size: 14 }, () =>
-      h(Icon, { icon: 'codicon:debug-restart', width: 14 }),
+      h(Icon, { icon: getIcon('debugRestart'), width: 14 }),
     ),
     onClick: () => openConfirm('restart', row),
   },
@@ -423,7 +425,7 @@ const botMenuItems = (row: Record<string, unknown>): MenuItem[] => [
   {
     label: '获取日志',
     icon: h(IconContainer, { size: 14 }, () =>
-      h(Icon, { icon: 'codicon:output', width: 14 }),
+      h(Icon, { icon: getIcon('output'), width: 14 }),
     ),
     onClick: () => openLogDialog(row),
   },
@@ -800,7 +802,7 @@ watch(
       >
         <template #icon>
           <IconContainer :size="14">
-            <Icon icon="codicon:debug-start" :width="14" />
+            <Icon :icon="getIcon('debugStart')" :width="14" />
           </IconContainer>
         </template>
         启动 Bot ({{ orgBotRows.length }})
@@ -848,7 +850,7 @@ watch(
                     <Button variant="subtle" @click="copyToken(row)">
                       <template #icon>
                         <IconContainer :size="14">
-                          <Icon icon="codicon:copy" :width="14" />
+                          <Icon :icon="getIcon('copy')" :width="14" />
                         </IconContainer>
                       </template>
                       复制token
@@ -937,7 +939,7 @@ watch(
       >
         <template #icon>
           <IconContainer :size="14">
-            <Icon icon="codicon:refresh" :width="14" />
+            <Icon :icon="getIcon('refresh')" :width="14" />
           </IconContainer>
         </template>
         刷新
@@ -1009,16 +1011,14 @@ watch(
       <!-- Bot 多选列表 -->
       <ScrollArea :max-height="260">
         <div class="botList">
-          <label
+          <div
             v-for="row in orgBotRows"
             :key="String(row.username)"
             class="botRow"
           >
-            <input
-              type="checkbox"
-              class="botCheck"
-              :checked="selectedBotUsernames.has(String(row.username))"
-              @change="toggleBatchSelectBot(String(row.username))"
+            <Checkbox
+              :model-value="selectedBotUsernames.has(String(row.username))"
+              @update:model-value="toggleBatchSelectBot(String(row.username))"
             />
             <span class="botName">{{ botDisplayName(row) }}</span>
             <span
@@ -1032,7 +1032,7 @@ watch(
             >
               {{ containerStatuses[String(row.username)] }}
             </span>
-          </label>
+          </div>
         </div>
       </ScrollArea>
 
@@ -1154,9 +1154,7 @@ watch(
 
 /* 表头 */
 .dataTable th {
-  background: var(
-    --table-header-bg
-  ); /* 不透明表头背景，吸顶时遮挡下方滚动数据 */
+  background: var(--bg-elev); /* 不透明表头背景，吸顶时遮挡下方滚动数据 */
   position: sticky; /* 粘性定位 */
   top: 0; /* 顶部吸顶 */
   font-weight: 600; /* 加粗 */
@@ -1164,7 +1162,7 @@ watch(
 
 /* 偶数行 */
 .dataTable tbody tr:nth-child(even) {
-  background: var(--table-stripe); /* 表格斑马纹 */
+  background: var(--glass); /* 表格斑马纹 */
 }
 
 /* 单元格内容：限宽 + 横向滚动 */
@@ -1317,15 +1315,6 @@ watch(
 /* Bot 行悬停高亮 */
 .botRow:hover {
   background: rgba(var(--accent-rgb), 0.06);
-}
-
-/* 复选框 */
-.botCheck {
-  width: 14px;
-  height: 14px;
-  accent-color: var(--accent);
-  cursor: pointer;
-  flex-shrink: 0;
 }
 
 /* Bot 用户名 */

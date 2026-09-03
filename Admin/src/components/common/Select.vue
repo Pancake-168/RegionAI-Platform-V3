@@ -12,8 +12,10 @@ import {
   SelectItemText,
 } from 'reka-ui'
 import { Icon } from '@iconify/vue'
+import IconContainer from './IconContainer.vue'
 import styles from './Select.module.css'
 import type { SelectOption } from './types'
+import { getIcon } from '@/icons'
 
 withDefaults(
   defineProps<{
@@ -55,10 +57,11 @@ const isOpen = ref(false)
           {{ options.find((o) => o.value === modelValue)?.label }}
         </SelectValue>
         <SelectIcon>
-          <Icon
-            icon="codicon:chevron-down"
-            :class="[styles.chevron, { [styles.chevronOpen]: isOpen }]"
-          />
+          <IconContainer :size="16"
+            ><Icon
+              :icon="getIcon('chevronDown')"
+              :class="[styles.chevron, { [styles.chevronOpen]: isOpen }]"
+          /></IconContainer>
         </SelectIcon>
       </SelectTrigger>
 

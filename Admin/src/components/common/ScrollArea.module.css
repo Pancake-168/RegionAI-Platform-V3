@@ -1,10 +1,6 @@
 .root {
   position: relative;
   overflow: hidden;
-  /* 填满父容器高度：让内部 viewport 的 height:100% 有确定参照，内容超出时在 viewport 内滚动 */
-  height: 100%;
-  /* 作为 flex/grid 子项时允许收缩到容器高度，防止被内容高度撑开后溢出被外层裁剪 */
-  min-height: 0;
 }
 
 .viewport {

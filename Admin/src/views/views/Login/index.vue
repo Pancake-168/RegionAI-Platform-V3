@@ -5,20 +5,23 @@
     <LoginPage2 v-else />
 
     <!-- 切换登录模式入口：使用项目内统一的 codicon 图标写法 -->
-    <button class="login-mode-switch" type="button" @click="toggleMode">
-      <IconContainer :size="18" shape="rounded">
-        <Icon icon="codicon:arrow-swap" :width="18" />
-      </IconContainer>
-    </button>
+    <Button variant="subtle" class="login-mode-switch" @click="toggleMode">
+      <template #icon>
+        <IconContainer :size="18" shape="rounded">
+          <Icon :icon="getIcon('arrowSwap')" :width="18" />
+        </IconContainer>
+      </template>
+    </Button>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Icon } from '@iconify/vue'
-import { IconContainer } from '@/components/common'
+import { Button, IconContainer } from '@/components/common'
 import LoginPage from '@/views/views/LoginPage'
 import LoginPage2 from '@/views/views/LoginPage2'
+import { getIcon } from '@/icons'
 
 // 默认 false：优先使用 if 当前扫描路线
 const useManualMode = ref(false)

@@ -16,7 +16,6 @@
   border: 1px solid var(--glass-brd);
   backdrop-filter: blur(var(--blur-panel));
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-lg);
   min-width: 320px;
   max-width: 90vw;
   max-height: 85vh;
@@ -83,4 +82,10 @@
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
   }
+}
+
+.closeButton {
+  position: absolute;
+  top: var(--spacing-lg);
+  right: var(--spacing-lg);
 }

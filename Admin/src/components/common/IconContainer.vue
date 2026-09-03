@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { Icon } from '@iconify/vue'
 import styles from './IconContainer.module.css'
+import { getIcon } from '@/icons'
 
 const props = withDefaults(
   defineProps<{
@@ -51,7 +52,7 @@ const fallbackSize = computed(() => Math.round(props.size * 0.45))
     <slot name="fallback">
       <div :class="styles.fallback">
         <Icon
-          icon="codicon:question"
+          :icon="getIcon('question')"
           :width="fallbackSize"
           :height="fallbackSize"
         />

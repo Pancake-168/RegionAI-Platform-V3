@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useId } from 'vue'
 import { SwitchRoot, SwitchThumb } from 'reka-ui'
+import Label from './Label.vue'
 import styles from './Switch.module.css'
 
 withDefaults(
@@ -32,6 +33,8 @@ const inputId = useId()
     >
       <SwitchThumb :class="styles.thumb" />
     </SwitchRoot>
-    <label v-if="label" :class="styles.label" :for="inputId">{{ label }}</label>
+    <Label v-if="label" :html-for="inputId" :class="styles.label">{{
+      label
+    }}</Label>
   </div>
 </template>

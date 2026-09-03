@@ -21,7 +21,6 @@
   border: 1px solid var(--glass-brd);
   backdrop-filter: blur(var(--blur-panel));
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
   padding: 10px 12px;
   animation: toastIn 0.3s ease;
 }
@@ -90,4 +89,12 @@
     opacity: 0;
     transform: translateX(100%);
   }
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  min-width: 8px;
+  border-radius: 50%;
 }

@@ -5,14 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
     "dev:tauri": "node scripts/tauri.js dev",
     "build:tauri": "node scripts/tauri.js build",
-    "lint": "eslint .",
+    "lint": "eslint . && node scripts/check-sfc.mjs",
     "format": "prettier --check .",
-    "format:write": "prettier --write ."
+    "format:write": "prettier --write .",
+    "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
     "@iconify-json/codicon": "^1.2.63",

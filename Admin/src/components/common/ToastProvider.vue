@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { ToastProvider, ToastViewport, ToastRoot, ToastClose } from 'reka-ui'
 import { Icon } from '@iconify/vue'
+import IconContainer from './IconContainer.vue'
+import Button from './Button.vue'
 import { useToastViewport } from '@/composables/useToast'
 import styles from './Toast.module.css'
+import { getIcon } from '@/icons'
 
 const { toasts, removeToast } = useToastViewport()
 </script>
@@ -22,26 +25,20 @@ const { toasts, removeToast } = useToastViewport()
           }
         "
       >
-        <div
-          :class="['pill', t.variant ?? 'info']"
-          :style="{
-            width: '8px',
-            height: '8px',
-            padding: '0',
-            minWidth: '8px',
-            borderRadius: '50%',
-          }"
-        />
+        <div :class="['pill', t.variant ?? 'info', styles.dot]" />
         <span :class="styles.message">{{ t.message }}</span>
-        <button
+        <Button
           v-if="t.action"
+          variant="subtle"
           :class="styles.action"
           @click="t.action.onClick"
         >
           {{ t.action.label }}
-        </button>
+        </Button>
         <ToastClose :class="styles.close" aria-label="关闭">
-          <Icon icon="codicon:close" :width="14" />
+          <IconContainer :size="14"
+            ><Icon :icon="getIcon('close')" :width="14"
+          /></IconContainer>
         </ToastClose>
       </ToastRoot>
     </ToastViewport>

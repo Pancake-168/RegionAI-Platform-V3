@@ -78,7 +78,7 @@
     >
       <template #icon>
         <IconContainer :size="18" shape="rounded">
-          <Icon icon="codicon:settings-gear" :width="18" />
+          <Icon :icon="getIcon('settingsGear')" :width="18" />
         </IconContainer>
       </template>
     </Button>
@@ -99,6 +99,7 @@ import type { DiscoveredServer } from '@/composables/useServerDiscovery' // 扫�
 import { loginByAccount } from '@/services/NocoBase/url' // NocoBase SDK 账号密码登录
 import { useNocoBaseAuthStore } from '@/stores/NocoBaseAuth' // NocoBase 认证状态 store
 import { SystemStorageManager } from '@/utils/SystemStorage' // 持久化：保存和恢复服务器地址
+import { getIcon } from '@/icons'
 
 /// 校验 URL 格式是否合法（必须以 http:// 或 https:// 开头）
 function validateUrl(value: string): boolean {

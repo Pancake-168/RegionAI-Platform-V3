@@ -2,11 +2,13 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { Icon } from '@iconify/vue'
+import IconContainer from '@/components/common/IconContainer.vue'
 import type { Window } from '@tauri-apps/api/window'
 import { isTauri } from '@/utils/isTauri'
 import { useTheme } from '@/composables/useTheme'
 import { createLogger } from '@/utils/logger'
 import styles from './TauriBar.module.css'
+import { getIcon } from '@/icons'
 
 const log = createLogger('TauriBar.vue', 'TauriBar')
 
@@ -20,9 +22,7 @@ let unlistenResize: (() => void) | undefined
 
 const isHome = computed(() => route.path === '/')
 const themeIcon = computed(() =>
-  theme.value === 'dark'
-    ? 'material-symbols:light-mode'
-    : 'material-symbols:dark-mode',
+  theme.value === 'dark' ? getIcon('lightMode') : getIcon('darkMode'),
 )
 
 onMounted(async () => {
@@ -57,7 +57,12 @@ function close() {
 <template>
   <header v-if="isTauri()" :class="styles.bar">
     <span :class="styles.left">
-      <img :class="styles.logo" :src="`${BASE_URL}yanjing-logo.png`" alt="" />
+      <IconContainer
+        :size="16"
+        :class="styles.logo"
+        :src="`${BASE_URL}yanjing-logo.png`"
+        alt=""
+      />
       <span :class="styles.title">RegionAI</span>
     </span>
     <span :class="styles.spacer" />
@@ -67,27 +72,37 @@ function close() {
       title="切换主题"
       @click="toggleTheme"
     >
-      <Icon :icon="themeIcon" :width="16" />
+      <IconContainer :size="16"
+        ><Icon :icon="themeIcon" :width="16"
+      /></IconContainer>
     </button>
     <button :class="styles.btn" title="最小化" @mousedown.prevent="minimize">
-      <Icon icon="codicon:chrome-minimize" :width="14" />
+      <IconContainer :size="14"
+        ><Icon :icon="getIcon('chromeMinimize')" :width="14"
+      /></IconContainer>
     </button>
     <button
       :class="styles.btn"
       title="最大化"
       @mousedown.prevent="toggleMaximize"
     >
-      <Icon
-        :icon="maximized ? 'codicon:chrome-restore' : 'codicon:chrome-maximize'"
-        :width="14"
-      />
+      <IconContainer :size="14">
+        <Icon
+          :icon="
+            maximized ? getIcon('chromeRestore') : getIcon('chromeMaximize')
+          "
+          :width="14"
+        />
+      </IconContainer>
     </button>
     <button
       :class="[styles.btn, styles.btnClose]"
       title="关闭"
       @mousedown.prevent="close"
     >
-      <Icon icon="codicon:chrome-close" :width="14" />
+      <IconContainer :size="14"
+        ><Icon :icon="getIcon('chromeClose')" :width="14"
+      /></IconContainer>
     </button>
   </header>
 </template>
