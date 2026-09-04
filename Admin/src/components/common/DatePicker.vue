@@ -11,9 +11,12 @@ import { getIcon } from '@/icons'
 const props = withDefaults(
   defineProps<{
     modelValue?: Date
+    defaultValue?: Date
     placeholder?: string
     label?: string
     disabled?: boolean
+    min?: Date
+    max?: Date
   }>(),
   {
     placeholder: '选择日期',
@@ -28,10 +31,11 @@ const emit = defineEmits<{
 const open = ref(false)
 
 const formatted = computed(() => {
-  if (!props.modelValue) return ''
-  const y = props.modelValue.getFullYear()
-  const m = String(props.modelValue.getMonth() + 1).padStart(2, '0')
-  const d = String(props.modelValue.getDate()).padStart(2, '0')
+  const display = props.modelValue ?? props.defaultValue
+  if (!display) return ''
+  const y = display.getFullYear()
+  const m = String(display.getMonth() + 1).padStart(2, '0')
+  const d = String(display.getDate()).padStart(2, '0')
   return `${y}-${m}-${d}`
 })
 
@@ -57,20 +61,31 @@ function selectDate(date: Date) {
           variant="secondary"
           :class="styles.trigger"
           :disabled="disabled"
+          aria-label="选择日期"
         >
-          <IconContainer :size="14"
+          <IconContainer :size="16"
             ><Icon
               :icon="getIcon('calendar')"
               :class="styles.icon"
-              :width="14"
-              :height="14"
+              :width="16"
+              :height="16"
           /></IconContainer>
-          <span :class="modelValue ? styles.text : styles.placeholder">
-            {{ modelValue ? formatted : placeholder }}
+          <span
+            :class="
+              modelValue || defaultValue ? styles.text : styles.placeholder
+            "
+          >
+            {{ formatted || placeholder }}
           </span>
         </Button>
       </template>
-      <Calendar :model-value="modelValue" @update:model-value="selectDate" />
+      <Calendar
+        :model-value="modelValue"
+        :default-value="defaultValue"
+        :min="min"
+        :max="max"
+        @update:model-value="selectDate"
+      />
     </Popover>
   </div>
 </template>

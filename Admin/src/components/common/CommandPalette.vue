@@ -48,6 +48,11 @@ watch(
   },
 )
 
+// 用户输入过滤词时，让高亮回到第一项，和 React 版行为一致
+watch(query, () => {
+  activeIndex.value = 0
+})
+
 const filtered = computed(() => {
   const keyword = query.value.trim().toLowerCase()
   if (!keyword) return props.items
@@ -71,19 +76,26 @@ function runItem(item: CommandItem) {
 function handleKeydown(event: KeyboardEvent) {
   if (event.key === 'ArrowDown') {
     event.preventDefault()
-    activeIndex.value = Math.min(
-      activeIndex.value + 1,
-      filtered.value.length - 1,
-    )
+    // 列表非空时向下循环，空列表保持 0
+    activeIndex.value = filtered.value.length
+      ? (activeIndex.value + 1) % filtered.value.length
+      : 0
   } else if (event.key === 'ArrowUp') {
     event.preventDefault()
-    activeIndex.value = Math.max(activeIndex.value - 1, 0)
+    // 列表非空时向上循环，空列表保持 0
+    activeIndex.value = filtered.value.length
+      ? (activeIndex.value - 1 + filtered.value.length) % filtered.value.length
+      : 0
   } else if (event.key === 'Enter') {
     const item = filtered.value[safeActiveIndex.value]
     if (item) {
       event.preventDefault()
       runItem(item)
     }
+  } else if (event.key === 'Escape') {
+    // Esc 关闭命令面板，和 React 版一致
+    event.preventDefault()
+    emit('update:open', false)
   }
 }
 </script>

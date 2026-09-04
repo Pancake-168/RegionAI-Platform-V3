@@ -84,8 +84,8 @@ function selectOption(option: ComboboxOption) {
     >
       <template #trigger>
         <div :class="styles.trigger">
-          <IconContainer :size="14" :class="styles.searchIcon"
-            ><Icon :icon="getIcon('search')" :width="14" :height="14"
+          <IconContainer :size="16" :class="styles.searchIcon"
+            ><Icon :icon="getIcon('search')" :width="16" :height="16"
           /></IconContainer>
           <Input
             :class="styles.input"
@@ -99,8 +99,8 @@ function selectOption(option: ComboboxOption) {
               }
             "
           />
-          <IconContainer :size="14" :class="styles.chevron"
-            ><Icon :icon="getIcon('chevronDown')" :width="14" :height="14"
+          <IconContainer :size="16" :class="styles.chevron"
+            ><Icon :icon="getIcon('chevronDown')" :width="16" :height="16"
           /></IconContainer>
         </div>
       </template>

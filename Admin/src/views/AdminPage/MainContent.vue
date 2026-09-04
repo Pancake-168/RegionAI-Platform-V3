@@ -827,7 +827,7 @@ watch(
     <!-- 数据表格视图 -->
     <!-- ===================== -->
     <div v-if="rows.length" class="tableWrap">
-      <ScrollArea>
+      <ScrollArea class="tableScroll">
         <table class="dataTable">
           <thead>
             <tr>
@@ -1130,7 +1130,16 @@ watch(
 .tableWrap {
   flex: 1; /* 占剩余空间 */
   min-height: 0; /* 允许收缩 */
+  display: flex; /* 让 ScrollArea 能按剩余高度约束 */
+  flex-direction: column; /* 纵向排列 */
+  overflow: hidden; /* 防止内容溢出到面板外 */
   padding: var(--spacing-lg); /* 内边距 */
+}
+
+/* ScrollArea 占满 tableWrap 剩余高度，才能产生纵向滚动 */
+.tableScroll {
+  flex: 1; /* 占满剩余空间 */
+  min-height: 0; /* 允许收缩 */
 }
 
 /* 数据表格 */

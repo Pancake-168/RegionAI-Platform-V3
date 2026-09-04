@@ -46,12 +46,12 @@ defineProps<{
         />
         <template v-else>{{ item.label }}</template>
       </span>
-      <IconContainer v-if="index < items.length - 1" :size="12"
+      <IconContainer v-if="index < items.length - 1" :size="16"
         ><Icon
           :icon="getIcon('chevronRight')"
           :class="styles.separator"
-          :width="12"
-          :height="12"
+          :width="16"
+          :height="16"
       /></IconContainer>
     </span>
   </nav>

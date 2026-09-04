@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, h } from 'vue'
 import { Icon } from '@iconify/vue'
+import IconContainer from './IconContainer.vue'
 import RadioGroup from './RadioGroup.vue'
 import styles from './Rating.module.css'
 import { getIcon } from '@/icons'
@@ -30,12 +31,14 @@ const radioOptions = computed(() =>
     const starValue = index + 1
     return {
       value: String(starValue),
-      content: h(Icon, {
-        icon: getIcon('starFull'),
-        class: styles.star,
-        width: 18,
-        height: 18,
-      }),
+      content: h(IconContainer, { size: 16 }, () =>
+        h(Icon, {
+          icon: getIcon('starFull'),
+          class: styles.star,
+          width: 16,
+          height: 16,
+        }),
+      ),
       itemClass: starValue <= current.value ? styles.active : '',
     }
   }),
